@@ -1,0 +1,65 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  color-scheme: light;
+  --background: 220 23% 97%;
+  --foreground: 230 22% 12%;
+  --surface: 0 0% 100%;
+  --surface-alt: 220 16% 93%;
+  --border: 220 14% 80%;
+  --muted: 230 12% 45%;
+  --primary: 262 83% 58%;
+  --primary-foreground: 0 0% 100%;
+  --accent: 199 89% 48%;
+  --accent-foreground: 0 0% 100%;
+  --grid-color: rgba(15, 23, 42, 0.08);
+  --bg-gradient: radial-gradient(1200px 600px at 80% -10%, rgba(139,92,246,0.12), transparent 60%),
+                  radial-gradient(800px 400px at 10% 10%, rgba(56,189,248,0.10), transparent 60%),
+                  hsl(var(--background));
+}
+
+.dark {
+  color-scheme: dark;
+  --background: 230 20% 6%;
+  --foreground: 230 20% 96%;
+  --surface: 229 18% 12%;
+  --surface-alt: 229 18% 10%;
+  --border: 226 13% 30%;
+  --muted: 230 12% 70%;
+  --primary: 262 83% 58%;
+  --primary-foreground: 0 0% 100%;
+  --accent: 199 89% 48%;
+  --accent-foreground: 0 0% 100%;
+  --grid-color: rgba(255, 255, 255, 0.06);
+  --bg-gradient: radial-gradient(1200px 600px at 80% -10%, rgba(139,92,246,0.15), transparent 60%),
+                  radial-gradient(800px 400px at 10% 10%, rgba(56,189,248,0.12), transparent 60%),
+                  hsl(var(--background));
+}
+
+html, body {
+  height: 100%;
+  scroll-behavior: smooth;
+  background: var(--bg-gradient);
+  color: hsl(var(--foreground));
+}
+
+.bg-grid {
+  background-image: theme('backgroundImage.grid');
+  background-size: theme('backgroundSize.grid');
+  mask-image: radial-gradient(ellipse at center, black 60%, transparent 90%);
+}
+
+.section {
+  @apply py-20 md:py-28 scroll-mt-24;
+}
+
+.heading {
+  @apply text-3xl md:text-5xl font-semibold tracking-tight;
+}
+
+.subheading {
+  @apply text-base md:text-lg text-muted max-w-2xl;
+}
+
