@@ -13,7 +13,7 @@ export default function Hero() {
           <Reveal>
             <div className="inline-flex items-center gap-2 rounded-full border border-border/60 bg-surface-alt/80 px-4 py-2 text-sm text-muted transition hover:bg-surface-alt/90 dark:border-white/10 dark:bg-surface/40 dark:text-foreground/80">
               <span className="h-2 w-2 rounded-full bg-accent animate-pulse" />
-              Available for freelance and full-time opportunities
+              Available for Lectures and online Training
             </div>
           </Reveal>
 
