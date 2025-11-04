@@ -32,10 +32,11 @@ export default function RootLayout({
   return (
     <html lang="en" className="dark" suppressHydrationWarning>
       <body className="min-h-screen bg-background text-foreground antialiased selection:bg-primary/25 selection:text-primary-foreground">
+        <div className="bg-art" />
         <ThemeProvider>
           <Nav />
-          <div className="bg-grid">
-            <div className="container">
+          <div className="bg-grid relative">
+            <div className="container relative z-10">
               {children}
             </div>
           </div>
