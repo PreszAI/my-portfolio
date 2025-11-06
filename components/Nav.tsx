@@ -52,8 +52,10 @@ export default function Nav() {
       }`}
     >
       <nav className="container flex items-center justify-between gap-4 py-4">
-        <a href="#home" className="font-semibold tracking-tight text-foreground">
+        <a href="#home" className="flex items-center gap-2 font-semibold tracking-tight text-foreground">
+          <img src="/TTPSLOGO.png" alt="TTPS Logo" className="h-[66px] w-auto" />
           <span className="text-primary">RPG</span> Portfolio
+          <img src="/hmlogot.png" alt="Logo" className="ml-2 h-[66px] w-auto" />
         </a>
 
         <ul className="hidden items-center gap-1 lg:flex lg:gap-2">
@@ -123,5 +125,4 @@ export default function Nav() {
     </header>
   )
 }
-
 

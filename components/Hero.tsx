@@ -20,8 +20,8 @@ export default function Hero() {
           {/* title & subtitle */}
           <div>
             <Reveal delayMs={80}>
-              <h1 className="heading mt-0">
-                Hi, I’m <span className="text-primary">Randy Presz Gray</span>.<br className="hidden md:block" />
+              <h1 className="heading mt-0 neon-outline">
+                Hi, I'm <span className="text-primary">Randy Presz Gray</span>.<br className="hidden md:block" />
                 Bringing AI to a community near You!
               </h1>
             </Reveal>

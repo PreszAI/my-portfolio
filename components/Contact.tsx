@@ -76,22 +76,22 @@ export default function Contact() {
         <div className="rounded-2xl border border-border/60 bg-surface/70 p-8 backdrop-blur md:p-10 dark:border-white/10 dark:bg-surface/40">
           <div className="flex flex-col gap-8 md:flex-row">
             <div className="md:w-2/5 space-y-4">
-              <h2 className="heading">Get in touch</h2>
-              <p className="subheading">
-                Ready to collaborate or have a question? Drop a message and I’ll get back as soon as possible.
+              <h2 className="heading text-white">Get in touch</h2>
+              <p className="subheading text-white">
+                Ready to collaborate or have a question? Drop a message and I'll get back as soon as possible.
               </p>
-              <div className="space-y-2 text-sm text-muted">
+              <div className="space-y-2 text-sm text-white">
                 <p className="flex items-center gap-2">
                   <span className="inline-flex h-8 w-8 items-center justify-center rounded-full bg-primary/10 text-primary dark:bg-primary/20">✉</span>
-                  <a href="mailto:you@example.com" className="transition hover:text-foreground">you@example.com</a>
+                  <a href="mailto:you@example.com" className="text-white transition hover:text-foreground">you@example.com</a>
                 </p>
                 <p className="flex items-center gap-2">
                   <span className="inline-flex h-8 w-8 items-center justify-center rounded-full bg-primary/10 text-primary dark:bg-primary/20">in</span>
-                  <a href="https://www.linkedin.com" target="_blank" rel="noreferrer" className="transition hover:text-foreground">LinkedIn</a>
+                  <a href="https://www.linkedin.com" target="_blank" rel="noreferrer" className="text-white transition hover:text-foreground">LinkedIn</a>
                 </p>
                 <p className="flex items-center gap-2">
                   <span className="inline-flex h-8 w-8 items-center justify-center rounded-full bg-primary/10 text-primary dark:bg-primary/20">GH</span>
-                  <a href="https://github.com" target="_blank" rel="noreferrer" className="transition hover:text-foreground">GitHub</a>
+                  <a href="https://github.com" target="_blank" rel="noreferrer" className="text-white transition hover:text-foreground">GitHub</a>
                 </p>
               </div>
             </div>
@@ -99,7 +99,7 @@ export default function Contact() {
             <form onSubmit={handleSubmit} className="md:w-3/5 space-y-4" noValidate>
               <div className="grid gap-4 sm:grid-cols-2">
                 <div>
-                  <label htmlFor="name" className="mb-2 block text-sm font-medium text-muted">
+                  <label htmlFor="name" className="mb-2 block text-sm font-medium text-white">
                     Name
                   </label>
                   <input
@@ -123,7 +123,7 @@ export default function Contact() {
                 </div>
 
                 <div>
-                  <label htmlFor="email" className="mb-2 block text-sm font-medium text-muted">
+                  <label htmlFor="email" className="mb-2 block text-sm font-medium text-white">
                     Email
                   </label>
                   <input
@@ -148,7 +148,7 @@ export default function Contact() {
               </div>
 
               <div>
-                <label htmlFor="message" className="mb-2 block text-sm font-medium text-muted">
+                <label htmlFor="message" className="mb-2 block text-sm font-medium text-white">
                   Message
                 </label>
                 <textarea
@@ -194,5 +194,3 @@ export default function Contact() {
     </section>
   )
 }
-
-

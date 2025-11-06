@@ -71,11 +71,12 @@ export default function Page() {
               </a>
             ))}
           </div>
-          <p className="text-xs sm:text-sm">© {new Date().getFullYear()} Your Name. All rights reserved.</p>
+          <p className="text-xs sm:text-sm">© {new Date().getFullYear()} Randy Presz Gray. All rights reserved.</p>
         </div>
       </footer>
     </main>
   )
 }
+
 
 

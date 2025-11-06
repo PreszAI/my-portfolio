@@ -43,6 +43,22 @@ html, body {
   scroll-behavior: smooth;
   background: var(--bg-gradient);
   color: hsl(var(--foreground));
+  position: relative;
+}
+
+.bg-watermark {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background-image: url('/techart.jpg');
+  background-size: cover;
+  background-position: center;
+  background-repeat: no-repeat;
+  opacity: 0.2;
+  z-index: 0;
+  pointer-events: none;
 }
 
 .bg-grid {
@@ -59,7 +75,7 @@ html, body {
   height: 100%;
   overflow: hidden;
   pointer-events: none;
-  z-index: 0;
+  z-index: 1;
 }
 
 .bg-art::before,
@@ -106,6 +122,60 @@ html, body {
 }
 
 .subheading {
-  @apply text-base md:text-lg text-muted max-w-2xl;
+  @apply text-base md:text-lg text-white max-w-2xl;
+}
+
+.neon-outline {
+  -webkit-text-stroke: 2px #a855f7;
+  text-stroke: 2px #a855f7;
+  color: hsl(var(--foreground));
+  text-shadow: 
+    -1px -1px 0 #a855f7,
+    1px -1px 0 #a855f7,
+    -1px 1px 0 #a855f7,
+    1px 1px 0 #a855f7,
+    0 0 2px #a855f7,
+    0 0 4px #a855f7,
+    0 0 6px #9333ea;
+  animation: neon-pulse 2s ease-in-out infinite;
+}
+
+.neon-outline span {
+  -webkit-text-stroke: 1px #ffffff;
+  text-stroke: 1px #ffffff;
+  text-shadow: 
+    -0.5px -0.5px 0 #ffffff,
+    0.5px -0.5px 0 #ffffff,
+    -0.5px 0.5px 0 #ffffff,
+    0.5px 0.5px 0 #ffffff;
+  filter: none;
+  animation: none;
+}
+
+@keyframes neon-pulse {
+  0%, 100% {
+    text-shadow: 
+      -1px -1px 0 #a855f7,
+      1px -1px 0 #a855f7,
+      -1px 1px 0 #a855f7,
+      1px 1px 0 #a855f7,
+      0 0 2px #a855f7,
+      0 0 4px #a855f7,
+      0 0 6px #9333ea;
+    -webkit-text-stroke-color: #a855f7;
+    filter: drop-shadow(0 0 1px #a855f7) drop-shadow(0 0 2px #9333ea);
+  }
+  50% {
+    text-shadow: 
+      -1px -1px 0 #c084fc,
+      1px -1px 0 #c084fc,
+      -1px 1px 0 #c084fc,
+      1px 1px 0 #c084fc,
+      0 0 1px #a855f7,
+      0 0 2px #a855f7,
+      0 0 3px #9333ea;
+    -webkit-text-stroke-color: #c084fc;
+    filter: drop-shadow(0 0 1px #a855f7) drop-shadow(0 0 2px #9333ea);
+  }
 }
 

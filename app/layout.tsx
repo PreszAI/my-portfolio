@@ -5,14 +5,14 @@ import Nav from '@/components/Nav'
 import { ThemeProvider } from '@/components/ThemeProvider'
 
 export const metadata: Metadata = {
-  title: 'Your Name — Portfolio',
+  title: 'Randy Presz Gray — Portfolio',
   description: 'Personal portfolio showcasing projects, experience, and contact information.',
   metadataBase: new URL('https://example.com'),
   openGraph: {
-    title: 'Your Name — Portfolio',
+    title: 'Randy Presz Gray — Portfolio',
     description: 'Personal portfolio showcasing projects, experience, and contact information.',
     url: 'https://example.com',
-    siteName: 'Your Name — Portfolio',
+    siteName: 'Randy Presz Gray — Portfolio',
     images: [
       { url: '/og.png', width: 1200, height: 630, alt: 'Portfolio' },
     ],
@@ -32,6 +32,7 @@ export default function RootLayout({
   return (
     <html lang="en" className="dark" suppressHydrationWarning>
       <body className="min-h-screen bg-background text-foreground antialiased selection:bg-primary/25 selection:text-primary-foreground">
+        <div className="bg-watermark" />
         <div className="bg-art" />
         <ThemeProvider>
           <Nav />

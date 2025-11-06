@@ -52,5 +52,3 @@ export default function Reveal({ children, className, delayMs = 0 }: RevealProps
     </div>
   )
 }
-
-

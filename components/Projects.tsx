@@ -1,3 +1,5 @@
+import Reveal from '@/components/Reveal'
+
 type Project = {
   title: string
   description: string
@@ -30,13 +32,11 @@ const projects: Project[] = [
   },
 ]
 
-import Reveal from '@/components/Reveal'
-
 export default function Projects() {
   return (
     <section id="projects" className="section">
       <Reveal className="mb-8 flex items-end justify-between gap-4">
-        <h2 className="heading">Projects</h2>
+        <h2 className="heading text-white">Projects</h2>
         <a href="#contact" className="text-accent hover:underline">Work with me →</a>
       </Reveal>
 
@@ -48,11 +48,11 @@ export default function Projects() {
                 <img src={p.image} alt={p.title} className="h-full w-full object-cover transition duration-300 group-hover:scale-105" />
               </div>
               <div className="p-5">
-                <h3 className="text-lg font-semibold">{p.title}</h3>
-                <p className="mt-2 text-muted">{p.description}</p>
+                <h3 className="text-lg font-semibold text-white">{p.title}</h3>
+                <p className="mt-2 text-white">{p.description}</p>
                 <div className="mt-3 flex flex-wrap gap-2">
                   {p.tags.map((t) => (
-                    <span key={t} className="text-xs rounded-full border border-border/60 bg-surface-alt/80 px-2 py-1 text-muted dark:border-white/10 dark:bg-surface/30">
+                    <span key={t} className="text-xs rounded-full border border-border/60 bg-surface-alt/80 px-2 py-1 text-white dark:border-white/10 dark:bg-surface/30">
                       {t}
                     </span>
                   ))}
@@ -73,5 +73,3 @@ export default function Projects() {
     </section>
   )
 }
-
-
