@@ -1,3 +1,5 @@
+'use client';
+
 import Reveal from '@/components/Reveal'
 
 type Project = {
@@ -35,40 +37,51 @@ const projects: Project[] = [
 export default function Projects() {
   return (
     <section id="projects" className="section">
-      <Reveal className="mb-8 flex items-end justify-between gap-4">
-        <h2 className="heading text-white">Projects</h2>
-        <a href="#contact" className="text-accent hover:underline">Work with me →</a>
-      </Reveal>
+      <div className="space-y-8">
+        <Reveal className="flex items-end justify-between gap-4">
+          <h2 className="heading text-foreground">Projects</h2>
+          <a href="#contact" className="text-accent hover:underline">Work with me →</a>
+        </Reveal>
 
-      <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
-        {projects.map((p, i) => (
-          <Reveal key={p.title} delayMs={i * 60}>
-            <div className="group relative overflow-hidden rounded-2xl border border-border/60 bg-surface/60 transition hover:bg-surface-alt/70 dark:border-white/10 dark:bg-surface/40">
-              <div className="aspect-[16/9] overflow-hidden">
-                <img src={p.image} alt={p.title} className="h-full w-full object-cover transition duration-300 group-hover:scale-105" />
-              </div>
-              <div className="p-5">
-                <h3 className="text-lg font-semibold text-white">{p.title}</h3>
-                <p className="mt-2 text-white">{p.description}</p>
-                <div className="mt-3 flex flex-wrap gap-2">
-                  {p.tags.map((t) => (
-                    <span key={t} className="text-xs rounded-full border border-border/60 bg-surface-alt/80 px-2 py-1 text-white dark:border-white/10 dark:bg-surface/30">
-                      {t}
-                    </span>
-                  ))}
+        <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
+          {projects.map((p, i) => {
+            const card = (
+              <div className="group relative overflow-hidden rounded-2xl border border-border/60 bg-surface/60 transition hover:bg-surface-alt/70 dark:border-white/10 dark:bg-surface/40">
+                <div className="aspect-[16/9] overflow-hidden">
+                  <img src={p.image} alt={p.title} className="h-full w-full object-cover transition duration-300 group-hover:scale-105" />
                 </div>
-                <div className="mt-5">
-                  <a href={p.link} className="inline-flex items-center gap-2 rounded-md bg-primary px-4 py-2 text-sm text-primary-foreground hover:opacity-90 transition">
-                    View Project
-                    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" className="h-4 w-4">
-                      <path fillRule="evenodd" d="M4.5 12a.75.75 0 0 1 .75-.75h12.19l-3.72-3.72a.75.75 0 1 1 1.06-1.06l5 5a.75.75 0 0 1 0 1.06l-5 5a.75.75 0 1 1-1.06-1.06l3.72-3.72H5.25A.75.75 0 0 1 4.5 12Z" clipRule="evenodd" />
-                    </svg>
-                  </a>
+                <div className="p-5">
+                  <h3 className="text-lg font-semibold text-foreground">{p.title}</h3>
+                  <p className="mt-2 text-foreground/80">{p.description}</p>
+                  <div className="mt-3 flex flex-wrap gap-2">
+                    {p.tags.map((t) => (
+                      <span
+                        key={t}
+                        className="text-xs rounded-full border border-border/60 bg-surface-alt/80 px-2 py-1 text-foreground dark:border-white/10 dark:bg-surface/30"
+                      >
+                        {t}
+                      </span>
+                    ))}
+                  </div>
+                  <div className="mt-5">
+                    <a href={p.link} className="inline-flex items-center gap-2 rounded-md bg-primary px-4 py-2 text-sm text-primary-foreground hover:opacity-90 transition">
+                      View Project
+                      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" className="h-4 w-4">
+                        <path fillRule="evenodd" d="M4.5 12a.75.75 0 0 1 .75-.75h12.19l-3.72-3.72a.75.75 0 1 1 1.06-1.06l5 5a.75.75 0 0 1 0 1.06l-5 5a.75.75 0 1 1-1.06-1.06l3.72-3.72H5.25A.75.75 0 0 1 4.5 12Z" clipRule="evenodd" />
+                      </svg>
+                    </a>
+                  </div>
                 </div>
               </div>
-            </div>
-          </Reveal>
-        ))}
+            );
+
+            return (
+              <Reveal key={p.title} delayMs={i * 60}>
+                {card}
+              </Reveal>
+            );
+          })}
+        </div>
       </div>
     </section>
   )

@@ -122,7 +122,8 @@ html, body {
 }
 
 .subheading {
-  @apply text-base md:text-lg text-white max-w-2xl;
+  @apply text-base md:text-lg max-w-2xl;
+  color: hsl(var(--foreground) / 0.85);
 }
 
 .neon-outline {
