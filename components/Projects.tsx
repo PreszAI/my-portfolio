@@ -32,6 +32,27 @@ const projects: Project[] = [
     image: '/comvolai.jpg',
     link: '#',
   },
+  {
+    title: 'Neighborhood Watch Platform',
+    description: 'A community-driven safety platform enabling residents to share updates and coordinate neighborhood watch activities.',
+    tags: ['Vue.js', 'Firebase', 'Maps API'],
+    image: 'https://images.unsplash.com/photo-1557804506-669a67965ba0?w=800&h=450&fit=crop',
+    link: '#',
+  },
+  {
+    title: 'Emergency Response Tracker',
+    description: 'Real-time tracking system for emergency services with live updates and route optimization for faster response times.',
+    tags: ['React Native', 'WebSocket', 'GIS'],
+    image: 'https://images.unsplash.com/photo-1581092160562-40aa08e78837?w=800&h=450&fit=crop',
+    link: '#',
+  },
+  {
+    title: 'Community Resource Hub',
+    description: 'Centralized platform connecting residents with local services, events, and resources in their area.',
+    tags: ['Next.js', 'MongoDB', 'Stripe'],
+    image: 'https://images.unsplash.com/photo-1552664730-d307ca884978?w=800&h=450&fit=crop',
+    link: '#',
+  },
 ]
 
 export default function Projects() {

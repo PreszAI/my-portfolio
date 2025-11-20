@@ -1,6 +1,7 @@
 import Hero from '@/components/Hero'
 import About from '@/components/About'
 import Projects from '@/components/Projects'
+import Reports from '@/components/Reports'
 import Contact from '@/components/Contact'
 
 const socialLinks = [
@@ -54,6 +55,7 @@ export default function Page() {
       <Hero />
       <About />
       <Projects />
+      <Reports />
       <Contact />
       <footer className="section pt-10 text-center text-sm text-muted">
         <div className="flex flex-col items-center gap-4">
