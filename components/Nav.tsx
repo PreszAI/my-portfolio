@@ -1,19 +1,23 @@
 "use client"
 
 import { useEffect, useState } from 'react'
+import { usePathname } from 'next/navigation'
+import Link from 'next/link'
 import ThemeToggle from '@/components/ThemeToggle'
 
 const links = [
-  { href: '#home', label: 'Home' },
-  { href: '#about', label: 'About' },
-  { href: '#projects', label: 'Projects' },
-  { href: '#reports', label: 'Reports' },
-  { href: '#contact', label: 'Contact' },
+  { href: '/', label: 'Home' },
+  { href: '/#about', label: 'About' },
+  { href: '/#projects', label: 'Projects' },
+  { href: '/#reports', label: 'Submit Report' },
+  { href: '/reports', label: 'All Reports' },
+  { href: '/#contact', label: 'Contact' },
 ]
 
 export default function Nav() {
   const [scrolled, setScrolled] = useState(false)
   const [open, setOpen] = useState(false)
+  const pathname = usePathname()
 
   useEffect(() => {
     const onScroll = () => setScrolled(window.scrollY > 8)
@@ -42,6 +46,23 @@ export default function Nav() {
     }
   }, [])
 
+  // Handle hash links - scroll to section if on home page, otherwise navigate
+  const handleLinkClick = (href: string, e: React.MouseEvent<HTMLAnchorElement>) => {
+    if (href.startsWith('/#')) {
+      const hash = href.substring(1) // Remove leading '/'
+      if (pathname === '/') {
+        // On home page, just scroll to section
+        e.preventDefault()
+        const element = document.querySelector(hash)
+        if (element) {
+          element.scrollIntoView({ behavior: 'smooth' })
+        }
+      }
+      // If not on home page, Link will navigate to /#section which will work
+    }
+    setOpen(false)
+  }
+
   const isActive = scrolled || open
 
   return (
@@ -53,21 +74,22 @@ export default function Nav() {
       }`}
     >
       <nav className="container flex items-center justify-between gap-4 py-4">
-        <a href="#home" className="flex items-center gap-2 font-semibold tracking-tight text-foreground">
+        <Link href="/" className="flex items-center gap-2 font-semibold tracking-tight text-foreground">
           <img src="/TTPSLOGO.png" alt="TTPS Logo" className="h-[66px] w-auto" />
           <span className="text-primary">RPG</span> Portfolio
           <img src="/hmlogot.png" alt="Logo" className="ml-2 h-[66px] w-auto" />
-        </a>
+        </Link>
 
         <ul className="hidden items-center gap-1 lg:flex lg:gap-2">
           {links.map((item) => (
             <li key={item.href}>
-              <a
+              <Link
                 href={item.href}
+                onClick={(e) => handleLinkClick(item.href, e)}
                 className="rounded-md px-3 py-2 text-sm text-muted transition hover:bg-surface-alt/80 hover:text-foreground"
               >
                 {item.label}
-              </a>
+              </Link>
             </li>
           ))}
         </ul>
@@ -111,13 +133,13 @@ export default function Nav() {
           <ul className="flex flex-col gap-1 rounded-2xl border border-border/60 bg-surface/60 backdrop-blur p-3">
             {links.map((item) => (
               <li key={item.href}>
-                <a
+                <Link
                   href={item.href}
-                  onClick={() => setOpen(false)}
+                  onClick={(e) => handleLinkClick(item.href, e)}
                   className="block rounded-lg px-4 py-2 text-sm text-muted transition hover:bg-surface-alt/60 hover:text-foreground"
                 >
                   {item.label}
-                </a>
+                </Link>
               </li>
             ))}
           </ul>

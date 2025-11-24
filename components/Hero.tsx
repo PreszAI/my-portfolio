@@ -1,4 +1,5 @@
 import Reveal from '@/components/Reveal'
+import NewsFlash from '@/components/NewsFlash'
 
 export default function Hero() {
   return (
@@ -6,6 +7,13 @@ export default function Hero() {
       <div className="relative overflow-hidden rounded-3xl border border-border/60 bg-surface/80 p-8 backdrop-blur md:p-14 shadow-glow text-center dark:border-white/10 dark:bg-surface/40">
         <div className="pointer-events-none absolute inset-0 -z-10 bg-gradient-to-b from-purple-600/40 via-purple-500/25 to-blue-500/25" />
         <div className="pointer-events-none absolute -inset-x-20 -top-20 -z-10 h-64 rotate-12 bg-gradient-to-r from-purple-400/30 via-fuchsia-400/20 to-blue-400/30 blur-3xl" />
+
+        {/* News Flash Animation */}
+        <Reveal>
+          <div className="mb-8">
+            <NewsFlash />
+          </div>
+        </Reveal>
 
         {/* Animated blocks */}
         <div className="space-y-4">
@@ -36,10 +44,10 @@ export default function Hero() {
           {/* ctas */}
           <Reveal delayMs={240}>
             <div className="mt-6 flex items-center justify-center gap-3">
-              <a href="#projects" className="px-5 py-3 rounded-md bg-primary text-primary-foreground shadow-glow hover:opacity-90 transition">
+              <a href="#projects" className="px-5 py-3 rounded-md bg-primary text-primary-foreground shadow-glow transition-all duration-300 hover:opacity-90 hover:scale-105 hover:shadow-lg">
                 View Projects
               </a>
-              <a href="#contact" className="px-5 py-3 rounded-md border border-border/60 bg-surface-alt/80 hover:bg-surface-alt/90 transition dark:border-white/10 dark:bg-surface/40">
+              <a href="#contact" className="px-5 py-3 rounded-md border border-border/60 bg-surface-alt/80 transition-all duration-300 hover:bg-surface-alt/90 hover:scale-105 hover:border-primary/50 dark:border-white/10 dark:bg-surface/40">
                 Contact Me
               </a>
             </div>

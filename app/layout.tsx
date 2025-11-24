@@ -2,6 +2,7 @@ import type { Metadata } from 'next'
 import type { ReactNode } from 'react'
 import './globals.css'
 import Nav from '@/components/Nav'
+import ScrollProgress from '@/components/ScrollProgress'
 import { ThemeProvider } from '@/components/ThemeProvider'
 
 export const metadata: Metadata = {
@@ -32,6 +33,7 @@ export default function RootLayout({
   return (
     <html lang="en" className="dark" suppressHydrationWarning>
       <body className="min-h-screen bg-background text-foreground antialiased selection:bg-primary/25 selection:text-primary-foreground">
+        <ScrollProgress />
         <div className="bg-watermark" />
         <div className="bg-art" />
         <ThemeProvider>

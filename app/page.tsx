@@ -1,3 +1,6 @@
+'use client'
+
+import { useEffect } from 'react'
 import Hero from '@/components/Hero'
 import About from '@/components/About'
 import Projects from '@/components/Projects'
@@ -50,6 +53,21 @@ const socialLinks = [
 ]
 
 export default function Page() {
+  // Handle hash scrolling when navigating from other pages
+  useEffect(() => {
+    // Check if there's a hash in the URL
+    const hash = window.location.hash
+    if (hash) {
+      // Wait for page to fully load, then scroll to section
+      setTimeout(() => {
+        const element = document.querySelector(hash)
+        if (element) {
+          element.scrollIntoView({ behavior: 'smooth' })
+        }
+      }, 100)
+    }
+  }, [])
+
   return (
     <main className="py-12 md:py-16">
       <Hero />
