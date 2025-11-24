@@ -477,18 +477,21 @@ function categorizeIncident(
   // Determine primary category
   let primaryCategory = category
   let confidence: 'high' | 'medium' | 'low' = 'high'
+  let matchFound = false
 
   // Check if category matches known categories
   for (const [key, mappedCategory] of Object.entries(categoryMapping)) {
     if (categoryLower.includes(key) || titleLower.includes(key) || descLower.includes(key)) {
       primaryCategory = mappedCategory
       confidence = categoryLower.includes(key) ? 'high' : 'medium'
+      matchFound = true
       break
     }
   }
 
   // If category doesn't match, try to infer from description
-  if (confidence === 'low' || primaryCategory === category) {
+  if (!matchFound || primaryCategory === category) {
+    confidence = 'low'
     for (const [key, mappedCategory] of Object.entries(categoryMapping)) {
       if (descLower.includes(key)) {
         primaryCategory = mappedCategory

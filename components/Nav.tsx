@@ -84,7 +84,7 @@ export default function Nav() {
           {links.map((item) => (
             <li key={item.href}>
               <Link
-                href={item.href}
+                href={item.href as any}
                 onClick={(e) => handleLinkClick(item.href, e)}
                 className="rounded-md px-3 py-2 text-sm text-muted transition hover:bg-surface-alt/80 hover:text-foreground"
               >
@@ -134,7 +134,7 @@ export default function Nav() {
             {links.map((item) => (
               <li key={item.href}>
                 <Link
-                  href={item.href}
+                  href={item.href as any}
                   onClick={(e) => handleLinkClick(item.href, e)}
                   className="block rounded-lg px-4 py-2 text-sm text-muted transition hover:bg-surface-alt/60 hover:text-foreground"
                 >
