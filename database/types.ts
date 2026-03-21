@@ -1,5 +1,6 @@
 // TypeScript types for database schema
 // Generated for AI-Driven Community Safety System
+import type { LineString } from 'geojson'
 
 export type IncidentStatus = 'pending' | 'reviewing' | 'in_progress' | 'resolved' | 'closed' | 'escalated'
 export type IncidentPriority = 'low' | 'medium' | 'high' | 'critical'
@@ -79,7 +80,7 @@ export interface PatrolRoute {
   
   // Route definition
   waypoints: Waypoint[]
-  route_path?: GeoJSON.LineString | null
+  route_path?: LineString | null
   total_distance_km?: number | null
   estimated_duration_minutes?: number | null
   
@@ -133,7 +134,7 @@ export interface PatrolExecution {
   agent_id: string
   
   // Actual path
-  actual_path?: GeoJSON.LineString | null
+  actual_path?: LineString | null
   checkpoints?: Checkpoint[] | null
   
   // Observations
