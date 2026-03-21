@@ -1,0 +1,317 @@
+// Prisma schema for AI-Driven Community Safety System
+// Supports both historical analysis and real-time agent processing
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum IncidentStatus {
+  pending
+  reviewing
+  in_progress
+  resolved
+  closed
+  escalated
+}
+
+enum IncidentPriority {
+  low
+  medium
+  high
+  critical
+}
+
+enum IncidentSeverity {
+  low
+  medium
+  high
+  critical
+}
+
+enum ScheduleType {
+  daily
+  weekly
+  custom
+  on_demand
+}
+
+enum PatrolExecutionStatus {
+  scheduled
+  in_progress
+  completed
+  cancelled
+  interrupted
+}
+
+enum DecisionType {
+  route_optimization
+  incident_prioritization
+  resource_allocation
+  incident_categorization
+  risk_assessment
+  patrol_scheduling
+  alert_generation
+}
+
+enum ContextType {
+  incident
+  route
+  patrol
+  agent
+  system
+}
+
+model Incident {
+  id            String   @id @default(uuid())
+  
+  // Core information
+  title         String   @db.VarChar(255)
+  description   String   @db.Text
+  category      String   @db.VarChar(100)
+  subcategory   String?  @db.VarChar(100)
+  
+  // Location
+  locationName  String?  @map("location_name") @db.VarChar(255)
+  latitude      Decimal? @db.Decimal(10, 8)
+  longitude     Decimal? @db.Decimal(11, 8)
+  address       String?  @db.Text
+  locationId    String?  @map("location_id") @db.VarChar(50)
+  
+  // Temporal
+  incidentDate  DateTime @map("incident_date") @db.Timestamptz(6)
+  incidentTime  String?  @map("incident_time")
+  reportedAt    DateTime @default(now()) @map("reported_at") @db.Timestamptz(6)
+  resolvedAt    DateTime? @map("resolved_at") @db.Timestamptz(6)
+  
+  // Status
+  status        IncidentStatus @default(pending)
+  priority      IncidentPriority @default(medium)
+  severity      IncidentSeverity?
+  
+  // Reporter
+  reporterName  String?  @map("reporter_name") @db.VarChar(255)
+  reporterEmail String?  @map("reporter_email") @db.VarChar(255)
+  reporterPhone String?  @map("reporter_phone") @db.VarChar(20)
+  isAnonymous   Boolean  @default(false) @map("is_anonymous")
+  
+  // AI Analysis (stored as JSON)
+  aiAnalysis    Json?    @map("ai_analysis")
+  aiCategory    String?   @map("ai_category") @db.VarChar(100)
+  aiConfidence  Decimal?  @map("ai_confidence") @db.Decimal(5, 4)
+  aiTags        String[]  @map("ai_tags")
+  aiEntities    Json?     @map("ai_entities")
+  aiSummary     String?   @map("ai_summary") @db.Text
+  
+  // Metadata
+  createdAt     DateTime  @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt     DateTime  @updatedAt @map("updated_at") @db.Timestamptz(6)
+  version       Int       @default(1)
+  
+  // Relations
+  routeAssociations IncidentRouteAssociation[]
+  decisionLinks     DecisionIncidentLink[]
+  
+  @@index([status])
+  @@index([priority])
+  @@index([category])
+  @@index([incidentDate])
+  @@index([reportedAt])
+  @@index([locationId])
+  @@index([aiConfidence(sort: Desc)])
+  @@index([createdAt(sort: Desc)])
+  @@map("incidents")
+}
+
+model PatrolRoute {
+  id                        String   @id @default(uuid())
+  
+  // Identification
+  routeName                 String   @map("route_name") @db.VarChar(255)
+  routeCode                 String   @unique @map("route_code") @db.VarChar(50)
+  description               String?  @db.Text
+  
+  // Route definition
+  waypoints                 Json     // Array of Waypoint objects
+  routePath                 Json?    @map("route_path") // GeoJSON LineString
+  totalDistanceKm           Decimal? @map("total_distance_km") @db.Decimal(10, 2)
+  estimatedDurationMinutes  Int?     @map("estimated_duration_minutes")
+  
+  // Schedule
+  scheduleType              ScheduleType @map("schedule_type")
+  scheduleConfig            Json?     @map("schedule_config")
+  activeDaysOfWeek          Int[]    @map("active_days_of_week")
+  startTime                 String?  @map("start_time")
+  endTime                   String?  @map("end_time")
+  timezone                  String   @default("America/Port_of_Spain") @db.VarChar(50)
+  
+  // Metadata
+  priorityLevel             Int      @default(5) @map("priority_level")
+  isActive                  Boolean  @default(true) @map("is_active")
+  assignedAgentId           String?  @map("assigned_agent_id") @db.Uuid
+  assignedTeam              String?  @map("assigned_team") @db.VarChar(100)
+  
+  // Metrics
+  coverageAreaKm2           Decimal? @map("coverage_area_km2") @db.Decimal(10, 2)
+  incidentsInRouteCount     Int      @default(0) @map("incidents_in_route_count")
+  lastPatrolledAt           DateTime? @map("last_patrolled_at") @db.Timestamptz(6)
+  averagePatrolDurationMinutes Int?   @map("average_patrol_duration_minutes")
+  
+  createdAt                 DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt                 DateTime @updatedAt @map("updated_at") @db.Timestamptz(6)
+  
+  // Relations
+  executions                PatrolExecution[]
+  routeAssociations         IncidentRouteAssociation[]
+  
+  @@index([isActive], where: { isActive: true })
+  @@index([priorityLevel(sort: Desc)])
+  @@index([assignedAgentId])
+  @@map("patrol_routes")
+}
+
+model PatrolExecution {
+  id                      String   @id @default(uuid())
+  routeId                 String   @map("route_id") @db.Uuid
+  
+  // Execution details
+  startedAt               DateTime @map("started_at") @db.Timestamptz(6)
+  completedAt             DateTime? @map("completed_at") @db.Timestamptz(6)
+  actualDurationMinutes   Int?     @map("actual_duration_minutes")
+  agentId                 String   @map("agent_id") @db.Uuid
+  
+  // Actual path
+  actualPath              Json?    @map("actual_path") // GeoJSON LineString
+  checkpoints             Json?    // Array of Checkpoint objects
+  
+  // Observations
+  incidentsObserved       Int      @default(0) @map("incidents_observed")
+  incidentsReported       Int      @default(0) @map("incidents_reported")
+  observations            String?  @db.Text
+  weatherConditions       String?  @map("weather_conditions") @db.VarChar(50)
+  visibilityConditions    String?  @map("visibility_conditions") @db.VarChar(50)
+  
+  // Status
+  status                  PatrolExecutionStatus @default(in_progress)
+  completionPercentage    Decimal? @map("completion_percentage") @db.Decimal(5, 2)
+  
+  createdAt               DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt               DateTime @updatedAt @map("updated_at") @db.Timestamptz(6)
+  
+  // Relations
+  route                   PatrolRoute @relation(fields: [routeId], references: [id], onDelete: Cascade)
+  routeAssociations       IncidentRouteAssociation[]
+  
+  @@index([routeId])
+  @@index([agentId])
+  @@index([startedAt(sort: Desc)])
+  @@index([status])
+  @@map("patrol_executions")
+}
+
+model AgentDecision {
+  id                    String   @id @default(uuid())
+  
+  // Context
+  decisionType          DecisionType @map("decision_type")
+  contextId             String?  @map("context_id") @db.Uuid
+  contextType           ContextType? @map("context_type")
+  
+  // Input
+  inputData             Json     @map("input_data")
+  inputFeatures         Json?    @map("input_features")
+  
+  // Output
+  decision              Json
+  actionTaken           String?  @map("action_taken") @db.VarChar(255)
+  actionResultId        String?  @map("action_result_id") @db.Uuid
+  
+  // Model info
+  modelName             String?  @map("model_name") @db.VarChar(100)
+  modelVersion          String?  @map("model_version") @db.VarChar(50)
+  promptTemplateId      String?  @map("prompt_template_id") @db.VarChar(100)
+  
+  // Confidence
+  confidenceScore       Decimal? @map("confidence_score") @db.Decimal(5, 4)
+  reasoning             String?  @db.Text
+  alternativeOptions    Json?    @map("alternative_options")
+  
+  // Performance
+  processingTimeMs      Int?     @map("processing_time_ms")
+  tokensUsed            Int?     @map("tokens_used")
+  costUsd               Decimal? @map("cost_usd") @db.Decimal(10, 6)
+  
+  // Validation
+  wasCorrect            Boolean? @map("was_correct")
+  humanFeedback         String?  @map("human_feedback") @db.Text
+  feedbackSource        String?  @map("feedback_source") @db.VarChar(50)
+  feedbackTimestamp     DateTime? @map("feedback_timestamp") @db.Timestamptz(6)
+  
+  // Learning
+  trainingExample       Boolean  @default(false) @map("training_example")
+  outcomeObserved       Boolean  @default(false) @map("outcome_observed")
+  outcomeValue          Json?    @map("outcome_value")
+  
+  createdAt             DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+  
+  // Relations
+  incidentLinks         DecisionIncidentLink[]
+  
+  @@index([decisionType])
+  @@index([contextType, contextId])
+  @@index([confidenceScore(sort: Desc)])
+  @@index([createdAt(sort: Desc)])
+  @@index([modelName, modelVersion])
+  @@index([trainingExample], where: { trainingExample: true })
+  @@index([wasCorrect], where: { wasCorrect: { not: null } })
+  @@map("agent_decisions")
+}
+
+model IncidentRouteAssociation {
+  id                    String   @id @default(uuid())
+  incidentId            String   @map("incident_id") @db.Uuid
+  routeId               String   @map("route_id") @db.Uuid
+  
+  associationType       String?  @map("association_type") @db.VarChar(50)
+  distanceMeters        Decimal? @map("distance_meters") @db.Decimal(10, 2)
+  discoveredDuringPatrol Boolean @default(false) @map("discovered_during_patrol")
+  patrolExecutionId     String?  @map("patrol_execution_id") @db.Uuid
+  
+  createdAt             DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+  
+  // Relations
+  incident              Incident @relation(fields: [incidentId], references: [id], onDelete: Cascade)
+  route                 PatrolRoute @relation(fields: [routeId], references: [id], onDelete: Cascade)
+  patrolExecution       PatrolExecution? @relation(fields: [patrolExecutionId], references: [id])
+  
+  @@unique([incidentId, routeId])
+  @@index([incidentId])
+  @@index([routeId])
+  @@map("incident_route_associations")
+}
+
+model DecisionIncidentLink {
+  id                    String   @id @default(uuid())
+  decisionId            String   @map("decision_id") @db.Uuid
+  incidentId            String   @map("incident_id") @db.Uuid
+  
+  linkType              String?  @map("link_type") @db.VarChar(50)
+  impactScore           Decimal? @map("impact_score") @db.Decimal(5, 4)
+  
+  createdAt             DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+  
+  // Relations
+  decision              AgentDecision @relation(fields: [decisionId], references: [id], onDelete: Cascade)
+  incident              Incident @relation(fields: [incidentId], references: [id], onDelete: Cascade)
+  
+  @@unique([decisionId, incidentId])
+  @@index([decisionId])
+  @@index([incidentId])
+  @@map("decision_incident_links")
+}
+
+

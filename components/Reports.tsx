@@ -17,6 +17,13 @@ export type Report = {
   reporterEmail?: string
   incidentDate?: string
   incidentTime?: string
+  attachments?: {
+    name: string
+    type: string
+    size: number
+    dataUrl: string
+  }[]
+  analysis?: any
 }
 
 type ReportFormState = {
@@ -241,6 +248,23 @@ export default function Reports() {
   const [analyzingReportId, setAnalyzingReportId] = useState<string | null>(null)
   const [analysisResults, setAnalysisResults] = useState<Record<string, any>>({})
   const [analysisError, setAnalysisError] = useState<string | null>(null)
+  const [hasBackup, setHasBackup] = useState<boolean>(false)
+  const [selectedFiles, setSelectedFiles] = useState<File[]>([])
+  const [attachmentError, setAttachmentError] = useState<string | null>(null)
+
+  const fileToDataUrl = (file: File): Promise<string> =>
+    new Promise((resolve, reject) => {
+      const reader = new FileReader()
+      reader.onload = () => {
+        if (typeof reader.result === 'string') {
+          resolve(reader.result)
+        } else {
+          reject(new Error('Failed to read file data.'))
+        }
+      }
+      reader.onerror = () => reject(new Error('Unable to read selected file.'))
+      reader.readAsDataURL(file)
+    })
 
   // Initialize reports on component mount
   // Load from localStorage for persistence across page refreshes
@@ -248,26 +272,121 @@ export default function Reports() {
     try {
       const storedReports = localStorage.getItem('communityReports')
       if (storedReports) {
+        // Create backup before attempting to parse
+        try {
+          localStorage.setItem('communityReports_backup', storedReports)
+        } catch (backupError) {
+          console.warn('Could not create backup:', backupError)
+        }
+
         const parsed = JSON.parse(storedReports)
         // Validate that parsed data is an array
         if (Array.isArray(parsed)) {
-          const reportsWithDates = parsed.map((r: Omit<Report, 'createdAt'> & { createdAt: string }) => ({
-            ...r,
-            createdAt: new Date(r.createdAt),
-          }))
-          setReports(reportsWithDates)
+          // Try to recover valid reports even if some are corrupted
+          const validReports: Report[] = []
+          parsed.forEach((r: any, index: number) => {
+            try {
+              if (r && typeof r === 'object') {
+                const report: Report = {
+                  id: r.id || `recovered-${Date.now()}-${index}`,
+                  title: r.title || 'Untitled Report',
+                  description: r.description || '',
+                  category: r.category || 'Unknown',
+                  priority: r.priority || 'medium',
+                  status: r.status || 'pending',
+                  createdAt: r.createdAt ? new Date(r.createdAt) : new Date(),
+                  location: r.location,
+                  reporterName: r.reporterName,
+                  reporterEmail: r.reporterEmail,
+                  incidentDate: r.incidentDate,
+                  incidentTime: r.incidentTime,
+                  attachments: Array.isArray(r.attachments) ? r.attachments : undefined,
+                  analysis: r.analysis,
+                }
+                validReports.push(report)
+              }
+            } catch (reportError) {
+              console.warn(`Skipping corrupted report at index ${index}:`, reportError)
+            }
+          })
+          
+          if (validReports.length > 0) {
+            // Filter out reports with title "Crime, Safety & Security"
+            const filteredReports = validReports.filter(report => report.title !== 'Crime, Safety & Security')
+            
+            // Only update if reports were filtered out
+            if (filteredReports.length !== validReports.length) {
+              console.log(`Removed ${validReports.length - filteredReports.length} report(s) with title "Crime, Safety & Security"`)
+            }
+            
+            setReports(filteredReports)
+            // Save filtered reports
+            try {
+              localStorage.setItem('communityReports', JSON.stringify(filteredReports))
+            } catch (saveError) {
+              console.error('Error saving recovered reports:', saveError)
+            }
+          } else {
+            console.warn('No valid reports found in localStorage')
+          }
         } else {
-          console.warn('Invalid data format in localStorage, clearing...')
-          localStorage.removeItem('communityReports')
+          console.warn('Invalid data format in localStorage (not an array). Data preserved in backup.')
+          // Don't clear - keep the data in case user wants to recover it
         }
       }
     } catch (error) {
       console.error('Error loading reports from localStorage:', error)
-      // Clear corrupted data
+      // Try to recover from backup
       try {
-        localStorage.removeItem('communityReports')
-      } catch (clearError) {
-        console.error('Error clearing localStorage:', clearError)
+        const backup = localStorage.getItem('communityReports_backup')
+        if (backup) {
+          console.log('Attempting to recover from backup...')
+          const parsed = JSON.parse(backup)
+          if (Array.isArray(parsed) && parsed.length > 0) {
+            const validReports: Report[] = []
+            parsed.forEach((r: any, index: number) => {
+              try {
+                if (r && typeof r === 'object') {
+                  validReports.push({
+                    id: r.id || `recovered-${Date.now()}-${index}`,
+                    title: r.title || 'Untitled Report',
+                    description: r.description || '',
+                    category: r.category || 'Unknown',
+                    priority: r.priority || 'medium',
+                    status: r.status || 'pending',
+                    createdAt: r.createdAt ? new Date(r.createdAt) : new Date(),
+                    location: r.location,
+                    reporterName: r.reporterName,
+                    reporterEmail: r.reporterEmail,
+                    incidentDate: r.incidentDate,
+                    incidentTime: r.incidentTime,
+                    attachments: Array.isArray(r.attachments) ? r.attachments : undefined,
+                    analysis: r.analysis,
+                  })
+                }
+              } catch (reportError) {
+                console.warn(`Skipping corrupted report at index ${index}:`, reportError)
+              }
+            })
+            if (validReports.length > 0) {
+              // Filter out reports with title "Crime, Safety & Security"
+              const filteredReports = validReports.filter(report => report.title !== 'Crime, Safety & Security')
+              
+              // Only update if reports were filtered out
+              if (filteredReports.length !== validReports.length) {
+                console.log(`Removed ${validReports.length - filteredReports.length} report(s) with title "Crime, Safety & Security"`)
+              }
+              
+              setReports(filteredReports)
+              localStorage.setItem('communityReports', JSON.stringify(filteredReports))
+              console.log(`Recovered ${filteredReports.length} reports from backup`)
+            }
+          }
+        }
+      } catch (recoveryError) {
+        console.error('Error recovering from backup:', recoveryError)
+        // Only clear as absolute last resort
+        console.warn('Data could not be recovered. Original data preserved in backup.')
       }
     }
   }, [])
@@ -359,6 +478,18 @@ export default function Reports() {
     // Later, this will call an API endpoint
     await new Promise((resolve) => setTimeout(resolve, 800))
 
+    const attachments =
+      selectedFiles.length > 0
+        ? await Promise.all(
+            selectedFiles.map(async (file) => ({
+              name: file.name,
+              type: file.type || 'application/octet-stream',
+              size: file.size,
+              dataUrl: await fileToDataUrl(file),
+            }))
+          )
+        : undefined
+
     // Create new report
     const newReport: Report = {
       id: Date.now().toString() + Math.random().toString(36).substr(2, 9),
@@ -373,12 +504,15 @@ export default function Reports() {
       reporterEmail: form.reporterEmail.trim() || undefined,
       incidentDate: form.incidentDate.trim() || undefined,
       incidentTime: form.incidentTime.trim() || undefined,
+      attachments,
     }
 
     // Add report to array
     setReports((prev) => [newReport, ...prev])
     setStatus('success')
     setForm(initialFormState)
+    setSelectedFiles([])
+    setAttachmentError(null)
 
     // Later: Call API to save to database
     // await fetch('/api/reports', { method: 'POST', body: JSON.stringify(newReport) })
@@ -389,6 +523,35 @@ export default function Reports() {
     const statusMatch = filterStatus === 'all' || report.status === filterStatus
     return categoryMatch && statusMatch
   })
+
+  const handleFileUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
+    const files = Array.from(event.target.files || [])
+
+    if (files.length === 0) {
+      setSelectedFiles([])
+      setAttachmentError(null)
+      return
+    }
+
+    const maxFiles = 5
+    const maxFileSizeBytes = 10 * 1024 * 1024
+
+    if (files.length > maxFiles) {
+      setAttachmentError(`You can upload up to ${maxFiles} files.`)
+      setSelectedFiles(files.slice(0, maxFiles))
+      return
+    }
+
+    const oversizedFile = files.find((file) => file.size > maxFileSizeBytes)
+    if (oversizedFile) {
+      setAttachmentError(`"${oversizedFile.name}" is larger than 10MB.`)
+      return
+    }
+
+    setSelectedFiles(files)
+    setAttachmentError(null)
+    setStatus((prev) => (prev === 'success' ? 'idle' : prev))
+  }
 
   // Analyze incident using AI
   const analyzeIncident = async (report: Report) => {
@@ -412,24 +575,47 @@ export default function Reports() {
         }),
       })
 
-      const data = await response.json()
-
+      // Check if response is ok before parsing JSON
       if (!response.ok) {
-        // Handle API errors with user-friendly messages
-        const errorMessage = data.error || 'Failed to analyze incident. Please try again.'
-        const errorType = data.errorType || 'UNKNOWN_ERROR'
+        let errorMessage = 'Failed to analyze incident. Please try again.'
+        let errorType = 'UNKNOWN_ERROR'
+        let setupInstructions = null
         
-        // Use fallback data if provided
-        if (data.fallback) {
-          setAnalysisResults(prev => ({
-            ...prev,
-            [report.id]: data.fallback,
-          }))
-          setAnalysisError(`Analysis completed with limited information: ${errorMessage}`)
-        } else {
-          throw new Error(errorMessage)
+        try {
+          const errorData = await response.json()
+          errorMessage = errorData.error || errorMessage
+          errorType = errorData.errorType || errorType
+          setupInstructions = errorData.setupInstructions
+        } catch (parseError) {
+          // If we can't parse the error response, use status-based message
+          if (response.status === 500) {
+            errorMessage = 'Server error occurred. Please try again later.'
+          } else if (response.status === 400) {
+            errorMessage = 'Invalid request. Please check your report details.'
+          } else if (response.status === 401) {
+            errorMessage = 'Authentication failed. Please contact support.'
+          } else if (response.status === 429) {
+            errorMessage = 'Too many requests. Please try again in a moment.'
+          } else {
+            errorMessage = `Request failed with status ${response.status}. Please try again.`
+          }
         }
-        return
+        
+        // Special handling for configuration errors
+        if (errorType === 'CONFIGURATION_ERROR' && setupInstructions) {
+          const setupMsg = `${errorMessage}\n\nSetup Instructions:\n1. ${setupInstructions.step1}\n2. ${setupInstructions.step2}\n3. ${setupInstructions.step3}\n4. ${setupInstructions.step4}`
+          throw new Error(setupMsg)
+        }
+        
+        throw new Error(errorMessage)
+      }
+
+      // Parse JSON for successful responses
+      let data
+      try {
+        data = await response.json()
+      } catch (parseError) {
+        throw new Error('Invalid response from server. Please try again.')
       }
 
       if (data.success && data.data) {
@@ -452,6 +638,8 @@ export default function Reports() {
           errorMessage = 'Unable to connect to the analysis service. Please check your internet connection and try again.'
         } else if (error.message.includes('timeout')) {
           errorMessage = 'The analysis is taking longer than expected. Please try again in a moment.'
+        } else if (error.message.includes('JSON')) {
+          errorMessage = 'Invalid response from server. Please try again.'
         } else {
           errorMessage = error.message
         }
@@ -493,6 +681,153 @@ export default function Reports() {
         return 'bg-gray-500/20 text-gray-400 border-gray-500/40'
     }
   }
+
+  // Recovery function to restore reports from backup
+  const recoverReports = () => {
+    try {
+      // First, check all localStorage keys that might contain reports
+      const allKeys = Object.keys(localStorage)
+      const reportKeys = allKeys.filter(key => 
+        key.includes('report') || key.includes('Report') || key.includes('community')
+      )
+      
+      console.log('Found localStorage keys related to reports:', reportKeys)
+      
+      // Try backup first
+      let backup = localStorage.getItem('communityReports_backup')
+      let source = 'backup'
+      
+      // If backup is empty or doesn't exist, try the main key
+      if (!backup || backup === '[]' || backup === '{}' || backup === 'null') {
+        console.log('Backup is empty or invalid, trying main storage...')
+        backup = localStorage.getItem('communityReports')
+        source = 'main storage'
+        
+        // If main is also empty, try other keys
+        if (!backup || backup === '[]' || backup === '{}' || backup === 'null') {
+          for (const key of reportKeys) {
+            if (key !== 'communityReports' && key !== 'communityReports_backup') {
+              const data = localStorage.getItem(key)
+              if (data && data !== '[]' && data !== '{}' && data !== 'null') {
+                try {
+                  const test = JSON.parse(data)
+                  if (Array.isArray(test) && test.length > 0) {
+                    backup = data
+                    source = key
+                    console.log(`Found data in key: ${key}`)
+                    break
+                  }
+                } catch (e) {
+                  // Not valid JSON, skip
+                }
+              }
+            }
+          }
+        }
+      }
+      
+      if (!backup || backup === '[]' || backup === '{}' || backup === 'null') {
+        alert(`No recoverable data found in ${source}. The backup may have been created when there were no reports, or the data was cleared.`)
+        console.log('All localStorage keys:', allKeys)
+        console.log('Report-related keys:', reportKeys)
+        return
+      }
+
+      const parsed = JSON.parse(backup)
+      console.log(`Recovery source: ${source}`)
+      console.log('Parsed backup data:', parsed)
+      
+      let reportsArray: any[] = []
+
+      // Handle different backup formats
+      if (Array.isArray(parsed)) {
+        // Direct array format
+        reportsArray = parsed
+      } else if (parsed && typeof parsed === 'object') {
+        // Check if it's an export format with a reports property
+        if (Array.isArray(parsed.reports)) {
+          reportsArray = parsed.reports
+        } else if (parsed.id || parsed.title || parsed.description) {
+          // Single report object - wrap it in an array
+          reportsArray = [parsed]
+        } else {
+          // Try to find any array property
+          const arrayKeys = Object.keys(parsed).filter(key => Array.isArray(parsed[key]))
+          if (arrayKeys.length > 0) {
+            reportsArray = parsed[arrayKeys[0]]
+          }
+        }
+      }
+
+      console.log('Extracted reports array length:', reportsArray.length)
+
+      if (reportsArray.length === 0) {
+        alert(`Backup found in ${source} but it appears to be empty (no reports). This might mean the backup was created when there were no reports. Check the browser console (F12) for more details.`)
+        console.log('Backup data structure:', parsed)
+        console.log('Backup data type:', typeof parsed)
+        console.log('Is array:', Array.isArray(parsed))
+        console.log('Object keys:', parsed && typeof parsed === 'object' ? Object.keys(parsed) : 'N/A')
+        return
+      }
+
+      // Process and validate reports
+      const validReports: Report[] = []
+      reportsArray.forEach((r: any, index: number) => {
+        try {
+          if (r && typeof r === 'object') {
+            validReports.push({
+              id: r.id || `recovered-${Date.now()}-${index}`,
+              title: r.title || 'Untitled Report',
+              description: r.description || '',
+              category: r.category || 'Unknown',
+              priority: r.priority || 'medium',
+              status: r.status || 'pending',
+              createdAt: r.createdAt ? new Date(r.createdAt) : new Date(),
+              location: r.location,
+              reporterName: r.reporterName,
+              reporterEmail: r.reporterEmail,
+              incidentDate: r.incidentDate,
+              incidentTime: r.incidentTime,
+              attachments: Array.isArray(r.attachments) ? r.attachments : undefined,
+              analysis: r.analysis,
+            })
+          }
+        } catch (reportError) {
+          console.warn(`Skipping corrupted report at index ${index}:`, reportError)
+        }
+      })
+
+      if (validReports.length > 0) {
+        // Filter out reports with title "Crime, Safety & Security"
+        const filteredReports = validReports.filter(report => report.title !== 'Crime, Safety & Security')
+        
+        setReports(filteredReports)
+        localStorage.setItem('communityReports', JSON.stringify(filteredReports))
+        
+        const removedCount = validReports.length - filteredReports.length
+        const message = removedCount > 0 
+          ? `Successfully recovered ${filteredReports.length} report(s) from ${source}! (${removedCount} report(s) with title "Crime, Safety & Security" were removed)`
+          : `Successfully recovered ${filteredReports.length} report(s) from ${source}!`
+        alert(message)
+      } else {
+        alert(`Backup found in ${source} but no valid reports could be recovered. Check the browser console (F12) for details.`)
+        console.log('Backup data:', parsed)
+        console.log('Extracted array:', reportsArray)
+        console.log('Valid reports count:', validReports.length)
+      }
+    } catch (error) {
+      console.error('Error recovering reports:', error)
+      alert(`Failed to recover reports: ${error instanceof Error ? error.message : 'Unknown error'}. Check the browser console (F12) for details.`)
+    }
+  }
+
+  // Check if backup exists (only on client side to avoid hydration errors)
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      const backup = localStorage.getItem('communityReports_backup')
+      setHasBackup(backup !== null && backup !== '[]' && backup !== '{}' && backup !== 'null')
+    }
+  }, [])
 
   return (
     <section id="reports" className="section">
@@ -631,6 +966,31 @@ export default function Reports() {
                 </div>
 
                 <div>
+                  <label htmlFor="attachments" className="mb-1 block text-sm font-medium text-foreground">
+                    Image / File Upload (optional)
+                  </label>
+                  <input
+                    id="attachments"
+                    name="attachments"
+                    type="file"
+                    multiple
+                    onChange={handleFileUpload}
+                    className="w-full rounded-lg border border-border/60 bg-surface/80 px-3 py-2 text-sm text-foreground file:mr-3 file:rounded-md file:border-0 file:bg-primary file:px-3 file:py-1.5 file:text-xs file:font-medium file:text-primary-foreground hover:file:opacity-90 focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/40 dark:bg-surface/30 dark:border-white/10"
+                  />
+                  <p className="mt-1 text-xs text-muted">Up to 5 files, max 10MB each.</p>
+                  {attachmentError && <p className="mt-1 text-xs text-red-300">{attachmentError}</p>}
+                  {selectedFiles.length > 0 && (
+                    <ul className="mt-2 space-y-1 text-xs text-muted">
+                      {selectedFiles.map((file) => (
+                        <li key={`${file.name}-${file.lastModified}`}>
+                          {file.name} ({(file.size / 1024).toFixed(1)} KB)
+                        </li>
+                      ))}
+                    </ul>
+                  )}
+                </div>
+
+                <div>
                   <label htmlFor="location" className="mb-1 block text-sm font-medium text-foreground">
                     Location (optional)
                   </label>
@@ -762,6 +1122,13 @@ export default function Reports() {
                               reporterEmail: report.reporterEmail || null,
                               incidentDate: report.incidentDate || null,
                               incidentTime: report.incidentTime || null,
+                              attachments: report.attachments
+                                ? report.attachments.map((attachment) => ({
+                                    name: attachment.name,
+                                    type: attachment.type,
+                                    size: attachment.size,
+                                  }))
+                                : null,
                               createdAt: report.createdAt.toISOString(),
                               analysis: analysis ? {
                                 category: analysis.category,
@@ -798,6 +1165,18 @@ export default function Reports() {
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
                       </svg>
                       Export
+                    </button>
+                  )}
+                  {hasBackup && (
+                    <button
+                      onClick={recoverReports}
+                      className="inline-flex items-center gap-2 rounded-md border border-orange-500/30 bg-orange-500/10 px-3 py-1.5 text-xs font-medium text-orange-400 transition hover:bg-orange-500/20 dark:bg-orange-500/20 dark:text-orange-300"
+                      title="Recover lost reports from backup"
+                    >
+                      <svg className="h-3.5 w-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+                      </svg>
+                      Recover Reports
                     </button>
                   )}
                   <select
@@ -857,6 +1236,21 @@ export default function Reports() {
                               <span>•</span>
                               <span>{report.createdAt.toLocaleDateString()}</span>
                             </div>
+                            {report.attachments && report.attachments.length > 0 && (
+                              <div className="mt-2 flex flex-wrap gap-2">
+                                {report.attachments.map((attachment) => (
+                                  <a
+                                    key={`${report.id}-${attachment.name}`}
+                                    href={attachment.dataUrl}
+                                    download={attachment.name}
+                                    className="inline-flex items-center gap-1 rounded-md border border-border/50 bg-surface-alt/60 px-2 py-1 text-xs text-foreground/80 hover:bg-surface-alt dark:border-white/10"
+                                  >
+                                    <span>Attachment:</span>
+                                    <span className="max-w-[180px] truncate">{attachment.name}</span>
+                                  </a>
+                                ))}
+                              </div>
+                            )}
                           </div>
                           <div className="flex items-start gap-2">
                             <button
@@ -896,13 +1290,27 @@ export default function Reports() {
                             </svg>
                             <div className="flex-1">
                               <h4 className="text-sm font-semibold text-red-400">Analysis Error</h4>
-                              <p className="mt-1 text-sm text-red-300">{analysisError}</p>
-                              <button
-                                onClick={() => analyzeIncident(report)}
-                                className="mt-3 text-xs text-red-400 underline hover:text-red-300"
-                              >
-                                Try again
-                              </button>
+                              <div className="mt-1 text-sm text-red-300 whitespace-pre-line">{analysisError}</div>
+                              {analysisError.includes('Setup Instructions') && (
+                                <div className="mt-3 rounded-md border border-red-500/20 bg-red-500/5 p-3 text-xs">
+                                  <p className="font-semibold text-red-400 mb-2">Quick Setup:</p>
+                                  <ol className="list-decimal list-inside space-y-1 text-red-300">
+                                    <li>Create a <code className="bg-red-500/20 px-1 rounded">.env.local</code> file in the project root</li>
+                                    <li>Add: <code className="bg-red-500/20 px-1 rounded">OPENAI_API_KEY=your_api_key_here</code></li>
+                                    <li>Get your API key from <a href="https://platform.openai.com/api-keys" target="_blank" rel="noopener noreferrer" className="underline hover:text-red-200">OpenAI</a></li>
+                                    <li>Restart your development server</li>
+                                  </ol>
+                                  <p className="mt-2 text-red-400">See <code className="bg-red-500/20 px-1 rounded">ENV_SETUP.md</code> for detailed instructions.</p>
+                                </div>
+                              )}
+                              {!analysisError.includes('Setup Instructions') && (
+                                <button
+                                  onClick={() => analyzeIncident(report)}
+                                  className="mt-3 text-xs text-red-400 underline hover:text-red-300"
+                                >
+                                  Try again
+                                </button>
+                              )}
                             </div>
                             <button
                               onClick={() => setAnalysisError(null)}

@@ -160,6 +160,7 @@ export default function ReportsPage() {
   const [analysisResults, setAnalysisResults] = useState<Record<string, any>>({})
   const [expandedReportId, setExpandedReportId] = useState<string | null>(null)
   const [analysisErrors, setAnalysisErrors] = useState<Record<string, string>>({})
+  const [hasBackup, setHasBackup] = useState<boolean>(false)
 
   // Load reports from localStorage on component mount
   // This ensures reports persist across page refreshes
@@ -167,26 +168,103 @@ export default function ReportsPage() {
     try {
       const storedReports = localStorage.getItem('communityReports')
       if (storedReports) {
+        // Create backup before attempting to parse
+        try {
+          localStorage.setItem('communityReports_backup', storedReports)
+        } catch (backupError) {
+          console.warn('Could not create backup:', backupError)
+        }
+
         const parsed = JSON.parse(storedReports)
         // Validate that parsed data is an array
         if (Array.isArray(parsed)) {
-          const reportsWithDates = parsed.map((r: Omit<Report, 'createdAt'> & { createdAt: string }) => ({
-            ...r,
-            createdAt: new Date(r.createdAt),
-          }))
-          setReports(reportsWithDates)
+          // Try to recover valid reports even if some are corrupted
+          const validReports: Report[] = []
+          parsed.forEach((r: any, index: number) => {
+            try {
+              if (r && typeof r === 'object') {
+                const report: Report = {
+                  id: r.id || `recovered-${Date.now()}-${index}`,
+                  title: r.title || 'Untitled Report',
+                  description: r.description || '',
+                  category: r.category || 'Unknown',
+                  priority: r.priority || 'medium',
+                  status: r.status || 'pending',
+                  createdAt: r.createdAt ? new Date(r.createdAt) : new Date(),
+                  location: r.location,
+                  reporterName: r.reporterName,
+                  reporterEmail: r.reporterEmail,
+                  incidentDate: r.incidentDate,
+                  incidentTime: r.incidentTime,
+                  analysis: r.analysis,
+                }
+                validReports.push(report)
+              }
+            } catch (reportError) {
+              console.warn(`Skipping corrupted report at index ${index}:`, reportError)
+            }
+          })
+          
+          if (validReports.length > 0) {
+            setReports(validReports)
+            // Save recovered reports
+            try {
+              localStorage.setItem('communityReports', JSON.stringify(validReports))
+            } catch (saveError) {
+              console.error('Error saving recovered reports:', saveError)
+            }
+          } else {
+            console.warn('No valid reports found in localStorage')
+          }
         } else {
-          console.warn('Invalid data format in localStorage, clearing...')
-          localStorage.removeItem('communityReports')
+          console.warn('Invalid data format in localStorage (not an array). Data preserved in backup.')
+          // Don't clear - keep the data in case user wants to recover it
         }
       }
     } catch (error) {
       console.error('Error loading reports from localStorage:', error)
-      // Clear corrupted data
+      // Try to recover from backup
       try {
-        localStorage.removeItem('communityReports')
-      } catch (clearError) {
-        console.error('Error clearing localStorage:', clearError)
+        const backup = localStorage.getItem('communityReports_backup')
+        if (backup) {
+          console.log('Attempting to recover from backup...')
+          const parsed = JSON.parse(backup)
+          if (Array.isArray(parsed) && parsed.length > 0) {
+            const validReports: Report[] = []
+            parsed.forEach((r: any, index: number) => {
+              try {
+                if (r && typeof r === 'object') {
+                  validReports.push({
+                    id: r.id || `recovered-${Date.now()}-${index}`,
+                    title: r.title || 'Untitled Report',
+                    description: r.description || '',
+                    category: r.category || 'Unknown',
+                    priority: r.priority || 'medium',
+                    status: r.status || 'pending',
+                    createdAt: r.createdAt ? new Date(r.createdAt) : new Date(),
+                    location: r.location,
+                    reporterName: r.reporterName,
+                    reporterEmail: r.reporterEmail,
+                    incidentDate: r.incidentDate,
+                    incidentTime: r.incidentTime,
+                    analysis: r.analysis,
+                  })
+                }
+              } catch (reportError) {
+                console.warn(`Skipping corrupted report at index ${index}:`, reportError)
+              }
+            })
+            if (validReports.length > 0) {
+              setReports(validReports)
+              localStorage.setItem('communityReports', JSON.stringify(validReports))
+              console.log(`Recovered ${validReports.length} reports from backup`)
+            }
+          }
+        }
+      } catch (recoveryError) {
+        console.error('Error recovering from backup:', recoveryError)
+        // Only clear as absolute last resort
+        console.warn('Data could not be recovered. Original data preserved in backup.')
       }
     }
   }, [])
@@ -231,18 +309,37 @@ export default function ReportsPage() {
         }),
       })
 
-      const data = await response.json()
-
+      // Check if response is ok before parsing JSON
       if (!response.ok) {
-        // Handle API errors with user-friendly messages
-        const errorMessage = data.error || 'Failed to analyze incident. Please try again.'
-        const errorType = data.errorType || 'UNKNOWN_ERROR'
+        let errorMessage = 'Failed to analyze incident. Please try again.'
+        let errorType = 'UNKNOWN_ERROR'
+        let fallbackData = null
+        
+        try {
+          const errorData = await response.json()
+          errorMessage = errorData.error || errorMessage
+          errorType = errorData.errorType || errorType
+          fallbackData = errorData.fallback
+        } catch (parseError) {
+          // If we can't parse the error response, use status-based message
+          if (response.status === 500) {
+            errorMessage = 'Server error occurred. Please try again later.'
+          } else if (response.status === 400) {
+            errorMessage = 'Invalid request. Please check your report details.'
+          } else if (response.status === 401) {
+            errorMessage = 'Authentication failed. Please contact support.'
+          } else if (response.status === 429) {
+            errorMessage = 'Too many requests. Please try again in a moment.'
+          } else {
+            errorMessage = `Request failed with status ${response.status}. Please try again.`
+          }
+        }
         
         // Use fallback data if provided
-        if (data.fallback) {
+        if (fallbackData) {
           setAnalysisResults(prev => ({
             ...prev,
-            [report.id]: data.fallback,
+            [report.id]: fallbackData,
           }))
           setAnalysisErrors(prev => ({
             ...prev,
@@ -252,6 +349,14 @@ export default function ReportsPage() {
           throw new Error(errorMessage)
         }
         return
+      }
+
+      // Parse JSON for successful responses
+      let data
+      try {
+        data = await response.json()
+      } catch (parseError) {
+        throw new Error('Invalid response from server. Please try again.')
       }
 
       if (data.success && data.data) {
@@ -488,6 +593,144 @@ export default function ReportsPage() {
       alert('Failed to export reports. Please try again.')
     }
   }
+
+  // Recovery function to restore reports from backup
+  const recoverReports = () => {
+    try {
+      // First, check all localStorage keys that might contain reports
+      const allKeys = Object.keys(localStorage)
+      const reportKeys = allKeys.filter(key => 
+        key.includes('report') || key.includes('Report') || key.includes('community')
+      )
+      
+      console.log('Found localStorage keys related to reports:', reportKeys)
+      
+      // Try backup first
+      let backup = localStorage.getItem('communityReports_backup')
+      let source = 'backup'
+      
+      // If backup is empty or doesn't exist, try the main key
+      if (!backup || backup === '[]' || backup === '{}' || backup === 'null') {
+        console.log('Backup is empty or invalid, trying main storage...')
+        backup = localStorage.getItem('communityReports')
+        source = 'main storage'
+        
+        // If main is also empty, try other keys
+        if (!backup || backup === '[]' || backup === '{}' || backup === 'null') {
+          for (const key of reportKeys) {
+            if (key !== 'communityReports' && key !== 'communityReports_backup') {
+              const data = localStorage.getItem(key)
+              if (data && data !== '[]' && data !== '{}' && data !== 'null') {
+                try {
+                  const test = JSON.parse(data)
+                  if (Array.isArray(test) && test.length > 0) {
+                    backup = data
+                    source = key
+                    console.log(`Found data in key: ${key}`)
+                    break
+                  }
+                } catch (e) {
+                  // Not valid JSON, skip
+                }
+              }
+            }
+          }
+        }
+      }
+      
+      if (!backup || backup === '[]' || backup === '{}' || backup === 'null') {
+        alert(`No recoverable data found in ${source}. The backup may have been created when there were no reports, or the data was cleared.`)
+        console.log('All localStorage keys:', allKeys)
+        console.log('Report-related keys:', reportKeys)
+        return
+      }
+
+      const parsed = JSON.parse(backup)
+      console.log(`Recovery source: ${source}`)
+      console.log('Parsed backup data:', parsed)
+      
+      let reportsArray: any[] = []
+
+      // Handle different backup formats
+      if (Array.isArray(parsed)) {
+        // Direct array format
+        reportsArray = parsed
+      } else if (parsed && typeof parsed === 'object') {
+        // Check if it's an export format with a reports property
+        if (Array.isArray(parsed.reports)) {
+          reportsArray = parsed.reports
+        } else if (parsed.id || parsed.title || parsed.description) {
+          // Single report object - wrap it in an array
+          reportsArray = [parsed]
+        } else {
+          // Try to find any array property
+          const arrayKeys = Object.keys(parsed).filter(key => Array.isArray(parsed[key]))
+          if (arrayKeys.length > 0) {
+            reportsArray = parsed[arrayKeys[0]]
+          }
+        }
+      }
+
+      console.log('Extracted reports array length:', reportsArray.length)
+
+      if (reportsArray.length === 0) {
+        alert(`Backup found in ${source} but it appears to be empty (no reports). This might mean the backup was created when there were no reports. Check the browser console (F12) for more details.`)
+        console.log('Backup data structure:', parsed)
+        console.log('Backup data type:', typeof parsed)
+        console.log('Is array:', Array.isArray(parsed))
+        console.log('Object keys:', parsed && typeof parsed === 'object' ? Object.keys(parsed) : 'N/A')
+        return
+      }
+
+      // Process and validate reports
+      const validReports: Report[] = []
+      reportsArray.forEach((r: any, index: number) => {
+        try {
+          if (r && typeof r === 'object') {
+            validReports.push({
+              id: r.id || `recovered-${Date.now()}-${index}`,
+              title: r.title || 'Untitled Report',
+              description: r.description || '',
+              category: r.category || 'Unknown',
+              priority: r.priority || 'medium',
+              status: r.status || 'pending',
+              createdAt: r.createdAt ? new Date(r.createdAt) : new Date(),
+              location: r.location,
+              reporterName: r.reporterName,
+              reporterEmail: r.reporterEmail,
+              incidentDate: r.incidentDate,
+              incidentTime: r.incidentTime,
+              analysis: r.analysis,
+            })
+          }
+        } catch (reportError) {
+          console.warn(`Skipping corrupted report at index ${index}:`, reportError)
+        }
+      })
+
+      if (validReports.length > 0) {
+        setReports(validReports)
+        localStorage.setItem('communityReports', JSON.stringify(validReports))
+        alert(`Successfully recovered ${validReports.length} report(s) from ${source}!`)
+      } else {
+        alert(`Backup found in ${source} but no valid reports could be recovered. Check the browser console (F12) for details.`)
+        console.log('Backup data:', parsed)
+        console.log('Extracted array:', reportsArray)
+        console.log('Valid reports count:', validReports.length)
+      }
+    } catch (error) {
+      console.error('Error recovering reports:', error)
+      alert(`Failed to recover reports: ${error instanceof Error ? error.message : 'Unknown error'}. Check the browser console (F12) for details.`)
+    }
+  }
+
+  // Check if backup exists (only on client side to avoid hydration errors)
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      const backup = localStorage.getItem('communityReports_backup')
+      setHasBackup(backup !== null && backup !== '[]' && backup !== '{}' && backup !== 'null')
+    }
+  }, [])
 
   const getPriorityColor = (priority: Report['priority']) => {
     switch (priority) {
@@ -1042,6 +1285,18 @@ export default function ReportsPage() {
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
                   </svg>
                   Export Reports
+                </button>
+              )}
+              {hasBackup && (
+                <button
+                  onClick={recoverReports}
+                  className="inline-flex items-center gap-2 rounded-md border border-orange-500/30 bg-orange-500/10 px-4 py-2 text-sm font-medium text-orange-400 transition hover:bg-orange-500/20 dark:bg-orange-500/20 dark:text-orange-300"
+                  title="Recover lost reports from backup"
+                >
+                  <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+                  </svg>
+                  Recover Reports
                 </button>
               )}
               <a

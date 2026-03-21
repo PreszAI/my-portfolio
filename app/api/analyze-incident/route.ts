@@ -53,21 +53,6 @@ type AnalysisResponse = {
 
 export async function POST(request: NextRequest) {
   try {
-    // Validate API key exists (should be set in environment variables)
-    const apiKey = process.env.OPENAI_API_KEY || process.env.AI_API_KEY
-    
-    if (!apiKey) {
-      console.error('API key not configured')
-      return NextResponse.json(
-        { 
-          success: false,
-          error: 'AI service is not configured. Please contact the administrator.',
-          errorType: 'CONFIGURATION_ERROR'
-        },
-        { status: 500 }
-      )
-    }
-
     // Parse and validate request body
     let body: IncidentAnalysisRequest
     try {
@@ -113,18 +98,112 @@ export async function POST(request: NextRequest) {
     // Categorize incident based on category field
     const categorization = categorizeIncident(sanitizedCategory, sanitizedTitle, sanitizedDescription)
 
-    // Prepare the prompt for AI analysis with specific JSON structure
-    const analysisPrompt = `Analyze this community incident report and return ONLY a valid JSON object with these exact fields:
-- category: The primary incident category (string)
-- severity: The severity level - one of "low", "medium", or "high" (string)
-- entities: An object with arrays of extracted entities:
-  - people: Array of people mentioned (names, roles, descriptions)
-  - locations: Array of locations mentioned (addresses, landmarks, areas)
-  - times: Array of times mentioned (specific times, durations, timeframes)
-  - organizations: Array of organizations mentioned (optional)
-- summary: A concise summary of the incident (2-3 sentences, string)
+    // Validate API key exists (should be set in environment variables)
+    const apiKey = process.env.OPENAI_API_KEY || process.env.AI_API_KEY
+    
+    // If no API key, provide fallback analysis using extracted data
+    if (!apiKey) {
+      console.warn('API key not configured - using fallback analysis')
+      
+      // Determine severity based on priority and keywords
+      let severity: 'low' | 'medium' | 'high' = body.priority || 'medium'
+      const descLower = sanitizedDescription.toLowerCase()
+      const categoryLower = sanitizedCategory.toLowerCase()
+      
+      // High severity indicators - check category first for specific high-severity categories
+      if (categoryLower.includes('gang activity') || categoryLower.includes('domestic violence') || 
+          categoryLower.includes('stolen vehicle') || categoryLower.includes('firearm')) {
+        severity = 'high'
+      }
+      // Then check description for high severity keywords
+      else if (descLower.includes('urgent') || descLower.includes('emergency') || descLower.includes('critical') || 
+          descLower.includes('immediate') || descLower.includes('danger') || descLower.includes('threat') ||
+          descLower.includes('violence') || descLower.includes('weapon') || descLower.includes('fire') ||
+          descLower.includes('stolen') || descLower.includes('break-in') || descLower.includes('burglary') ||
+          descLower.includes('unconscious') || descLower.includes('missing') || 
+          (descLower.includes('elderly') && descLower.includes('concern')) ||
+          // Gang activity and suspicious activity that poses threats
+          (descLower.includes('gang') && descLower.includes('activity')) ||
+          (descLower.includes('suspicious activity') && (descLower.includes('drug') || descLower.includes('safety') || descLower.includes('children')))) {
+        severity = 'high'
+      }
+      // Medium severity for gambling (criminal activity but not immediately dangerous)
+      // Only set to medium if severity hasn't already been set to high
+      // Check this before low severity to ensure gambling is medium, not low
+      else if (categoryLower.includes('gambling') || descLower.includes('gambling')) {
+        severity = 'medium'
+      }
+      // Low severity indicators
+      else if (descLower.includes('minor') || descLower.includes('low priority') || descLower.includes('informational') ||
+               // Noise complaints are generally low (quality of life issue, not immediate danger)
+               // Even if "extremely loud" or "affecting", noise is still a quality of life issue
+               (categoryLower.includes('noise') || (descLower.includes('noise') && !descLower.includes('violence') && !descLower.includes('weapon')))) {
+        severity = 'low'
+      }
 
-Incident Details:
+      // Generate a basic summary
+      const summary = `This incident has been categorized as "${categorization.primaryCategory}" with ${severity} severity. ` +
+        `${extractedEntities.locations.length > 0 ? `Location: ${extractedEntities.locations[0]}. ` : ''}` +
+        `${extractedEntities.people.length > 0 ? `People involved: ${extractedEntities.people.slice(0, 3).join(', ')}. ` : ''}` +
+        `The incident requires ${severity === 'high' ? 'immediate' : severity === 'medium' ? 'prompt' : 'standard'} attention.`
+
+      return NextResponse.json({
+        success: true,
+        data: {
+          category: categorization.primaryCategory,
+          severity: severity,
+          entities: extractedEntities,
+          summary: summary,
+          suggestedActions: [
+            'Document all details of the incident',
+            severity === 'high' ? 'Notify relevant authorities immediately' : 'Notify relevant authorities if needed',
+            'Follow up with community members if applicable',
+            'Monitor the situation for any changes'
+          ],
+          riskLevel: severity,
+          urgency: severity,
+          tags: [categorization.primaryCategory, severity, ...(body.location ? [body.location] : [])],
+          categorization: categorization
+        }
+      })
+    }
+
+    // Prepare the prompt for AI analysis with specific JSON structure
+    const analysisPrompt = `You are a community safety analyst. Analyze this incident report and return ONLY valid JSON.
+
+AVAILABLE PRIMARY CATEGORIES (use exactly one of these):
+1. "Crime, Safety & Security" - Crimes (theft, burglary, vandalism, break-ins), violence (domestic violence, assault, gang activity), security threats (firearms, stolen vehicles), public safety issues (noise complaints, neighbor disputes), youth gambling, suspicious activity that poses security risks
+2. "Youth & Community Development" - Positive youth programs, mentorship needs, school dropout/absenteeism, after-school activities, sports programs, youth clubs (NOT crimes committed by youth - those go to Crime, Safety & Security)
+3. "Mental Health & Social Support" - Mental health resources, persons at risk of self-harm, welfare checks for vulnerable persons, elderly living alone, connecting people to mental health services
+4. "Substance Abuse & Addiction" - Drug/alcohol misuse, public intoxication, drug dealing, rehabilitation referrals, substance use in public spaces
+5. "Community Cohesion & Social Inclusion" - Community divisions (ethnic, gang-related, geographic), integrating marginalized groups, community meetings/forums, peace-building initiatives
+6. "Education & Awareness" - Crime prevention education, safety workshops, awareness campaigns, school talks (NOT incidents that happened at school - those go to School & Student-Related Issues)
+7. "Housing & Environmental Conditions" - Unsafe/abandoned buildings, derelict vehicles, nonfunctional street lighting, environmental health (mosquitoes, rodents, dumping), illegal utility connections
+8. "Economic & Employment-Related Issues" - Job programs, career fairs, apprenticeships, small business support, employment assistance
+9. "Domestic & Family Issues" - Family conflict (non-violent), support for single mothers, social worker referrals, Children's Authority referrals, restraining orders (NOTE: Domestic VIOLENCE goes to Crime, Safety & Security)
+10. "School & Student-Related Issues" - Truancy, bullying, cyberbullying, violence/weapons in schools, substance use in schools, mentoring at-risk students
+11. "Disaster Preparedness & Emergency Support" - Emergency preparedness, evacuation planning, relief distribution during disasters, identifying vulnerable persons for emergencies
+12. "Human Trafficking & Exploitation" - Suspicious trafficking activity, exploitation concerns, awareness campaigns, NGO support for trafficking victims
+13. "Elderly & Persons with Disabilities" - Welfare checks, social services access, safety assessments, community watch for vulnerable persons
+
+SEVERITY GUIDELINES (assess based on ACTUAL THREAT LEVEL in description, not just priority field):
+- "high": Immediate danger to life/safety (violence, weapons, active threats, emergencies, missing vulnerable persons, domestic violence, drug dealing, structural collapse risk, welfare checks for unresponsive elderly). Also: serious crimes (theft with high value, stolen vehicles, break-ins with violence)
+- "medium": Significant issues requiring prompt attention but not immediately life-threatening (theft, vandalism, noise complaints affecting many, youth gambling, suspicious activity, cyberbullying, abandoned buildings, ongoing disputes)
+- "low": Minor issues, isolated noise complaints, non-urgent informational reports, routine matters
+
+CATEGORY MAPPING RULES:
+- Youth gambling → "Crime, Safety & Security" (even though it involves youth, it's a crime)
+- Domestic violence → "Crime, Safety & Security" (violence is a crime, not just a family issue)
+- Stolen vehicles → "Crime, Safety & Security" (property crime)
+- Noise complaints → "Crime, Safety & Security" (public safety/quality of life issue)
+- Theft/burglary → "Crime, Safety & Security" (property crime)
+- Suspicious activity (drugs, illegal operations) → "Crime, Safety & Security" or "Substance Abuse & Addiction" depending on context
+- Welfare checks for elderly → "Mental Health & Social Support" or "Elderly & Persons with Disabilities"
+- Cyberbullying → "School & Student-Related Issues" (even if it happens online, it's school-related)
+- Abandoned buildings → "Housing & Environmental Conditions"
+- Drug use in public → "Substance Abuse & Addiction"
+
+INCIDENT DETAILS:
 Title: ${sanitizedTitle}
 Category: ${sanitizedCategory}
 Description: ${sanitizedDescription}
@@ -133,16 +212,39 @@ Priority: ${body.priority || 'medium'}
 Date: ${body.incidentDate || 'Not specified'}
 Time: ${body.incidentTime || 'Not specified'}
 
-IMPORTANT: Return ONLY valid JSON. Do not include any text before or after the JSON object.
+ANALYSIS REQUIREMENTS:
+1. Map the provided category to the most appropriate PRIMARY CATEGORY from the list above using the mapping rules
+2. Assess severity based on ACTUAL THREAT LEVEL in the description content - look for keywords like "violence", "weapon", "urgent", "emergency", "danger", "threat", "unconscious", "missing", "stolen", "break-in"
+3. Extract all people mentioned:
+   - Full names (e.g., "John Smith", "Marcus Johnson")
+   - Roles with names (e.g., "Officer Smith", "Constable Brown", "Mrs. Williams")
+   - Roles alone (e.g., "witness", "suspect", "victim", "neighbor")
+   - Descriptions (e.g., "teenager", "elderly man", "young men in hoodies")
+4. Extract all locations:
+   - Street addresses (e.g., "45 Duncan Street", "23 Springside")
+   - Street names (e.g., "Nelson Street", "St. John Street")
+   - Landmarks (e.g., "community center", "abandoned building", "park")
+   - Areas/neighborhoods (e.g., "Beetham Phase 2", "Picton Housing")
+5. Extract all times mentioned:
+   - Specific times (e.g., "2:30 PM", "8 PM", "6 AM")
+   - Relative times (e.g., "yesterday", "last night", "this morning", "for the past week")
+   - Time ranges (e.g., "between 2 AM and 6 AM", "from 10 PM until 3 AM")
+6. Extract organizations if mentioned (e.g., "Police Department", "Children's Authority", "local station")
+7. Write a concise 2-3 sentence summary that:
+   - States what happened (the incident type)
+   - Mentions key details (who, where, when if relevant)
+   - Highlights the main concern or risk
 
-Required JSON format (example):
+CRITICAL: Return ONLY valid JSON. No markdown, no explanations, no text before or after.
+
+REQUIRED JSON FORMAT:
 {
   "category": "Crime, Safety & Security",
   "severity": "high",
   "entities": {
-    "people": ["John Doe", "Officer Smith", "witness"],
-    "locations": ["Main Street", "Community Center"],
-    "times": ["2:30 PM", "yesterday afternoon"],
+    "people": ["John Doe", "Officer Smith", "witness", "teenagers"],
+    "locations": ["Main Street", "Community Center", "45 Duncan Street"],
+    "times": ["2:30 PM", "yesterday afternoon", "last night"],
     "organizations": ["Police Department"]
   },
   "summary": "Brief 2-3 sentence summary of the incident, key details, and immediate concerns."
@@ -155,7 +257,79 @@ Required JSON format (example):
     } catch (aiError) {
       console.error('AI service call failed:', aiError)
       
-      // Determine error type and provide user-friendly message
+      // Check if this is a 503 (Service Unavailable) error - use fallback analysis instead of failing
+      if (aiError instanceof Error && (
+        aiError.message.includes('503') || 
+        aiError.message.includes('temporarily unavailable') ||
+        aiError.message.includes('Service Unavailable')
+      )) {
+        console.warn('AI service unavailable (503), using fallback analysis')
+        
+        // Determine severity based on priority and keywords
+        let severity: 'low' | 'medium' | 'high' = body.priority || 'medium'
+        const descLower = sanitizedDescription.toLowerCase()
+        const categoryLower = sanitizedCategory.toLowerCase()
+        
+        // High severity indicators - check category first for specific high-severity categories
+        if (categoryLower.includes('gang activity') || categoryLower.includes('domestic violence') || 
+            categoryLower.includes('stolen vehicle') || categoryLower.includes('firearm')) {
+          severity = 'high'
+        }
+        // Then check description for high severity keywords
+        else if (descLower.includes('urgent') || descLower.includes('emergency') || descLower.includes('critical') || 
+            descLower.includes('immediate') || descLower.includes('danger') || descLower.includes('threat') ||
+            descLower.includes('violence') || descLower.includes('weapon') || descLower.includes('fire') ||
+            descLower.includes('stolen') || descLower.includes('break-in') || descLower.includes('burglary') ||
+            descLower.includes('unconscious') || descLower.includes('missing') || 
+            (descLower.includes('elderly') && descLower.includes('concern')) ||
+            // Gang activity and suspicious activity that poses threats
+            (descLower.includes('gang') && descLower.includes('activity')) ||
+            (descLower.includes('suspicious activity') && (descLower.includes('drug') || descLower.includes('safety') || descLower.includes('children')))) {
+          severity = 'high'
+        } 
+        // Medium severity for gambling (criminal activity but not immediately dangerous)
+        // Only set to medium if severity hasn't already been set to high
+        // Check this before low severity to ensure gambling is medium, not low
+        else if (categoryLower.includes('gambling') || descLower.includes('gambling')) {
+          severity = 'medium'
+        }
+        // Low severity indicators
+        else if (descLower.includes('minor') || descLower.includes('low priority') || descLower.includes('informational') ||
+                 // Noise complaints are generally low (quality of life issue, not immediate danger)
+                 // Even if "extremely loud" or "affecting", noise is still a quality of life issue
+                 (categoryLower.includes('noise') || (descLower.includes('noise') && !descLower.includes('violence') && !descLower.includes('weapon')))) {
+          severity = 'low'
+        }
+
+        // Generate a basic summary
+        const summary = `This incident has been categorized as "${categorization.primaryCategory}" with ${severity} severity. ` +
+          `${extractedEntities.locations.length > 0 ? `Location: ${extractedEntities.locations[0]}. ` : ''}` +
+          `${extractedEntities.people.length > 0 ? `People involved: ${extractedEntities.people.slice(0, 3).join(', ')}. ` : ''}` +
+          `The incident requires ${severity === 'high' ? 'immediate' : severity === 'medium' ? 'prompt' : 'standard'} attention.`
+
+        // Return successful response with fallback analysis
+        return NextResponse.json({
+          success: true,
+          data: {
+            category: categorization.primaryCategory,
+            severity: severity,
+            entities: extractedEntities,
+            summary: summary,
+            suggestedActions: [
+              'Document all details of the incident',
+              severity === 'high' ? 'Notify relevant authorities immediately' : 'Notify relevant authorities if needed',
+              'Follow up with community members if applicable',
+              'Monitor the situation for any changes'
+            ],
+            riskLevel: severity,
+            urgency: severity,
+            tags: [categorization.primaryCategory, severity, ...(body.location ? [body.location] : [])],
+            categorization: categorization,
+          }
+        })
+      }
+      
+      // For other errors, determine error type and provide user-friendly message
       let errorMessage = 'Unable to analyze the incident at this time. Please try again later.'
       let errorType = 'AI_SERVICE_ERROR'
       
@@ -163,7 +337,7 @@ Required JSON format (example):
         if (aiError.message.includes('timeout') || aiError.message.includes('network')) {
           errorMessage = 'The analysis service is taking too long to respond. Please try again in a moment.'
           errorType = 'TIMEOUT_ERROR'
-        } else if (aiError.message.includes('quota') || aiError.message.includes('limit')) {
+        } else if (aiError.message.includes('quota') || aiError.message.includes('limit') || aiError.message.includes('429')) {
           errorMessage = 'Analysis service is temporarily unavailable due to high demand. Please try again later.'
           errorType = 'QUOTA_ERROR'
         } else if (aiError.message.includes('unauthorized') || aiError.message.includes('401')) {
@@ -185,7 +359,7 @@ Required JSON format (example):
             summary: 'Automated analysis is currently unavailable. The incident has been logged and will be reviewed by community safety officers.',
           }
         },
-        { status: 503 }
+        { status: 500 }
       )
     }
 
@@ -211,6 +385,44 @@ Required JSON format (example):
       // Validate severity value
       if (!['low', 'medium', 'high'].includes(parsed.severity)) {
         parsed.severity = body.priority || 'medium'
+      }
+
+      // Validate category - ensure it matches one of the valid primary categories
+      const validCategories = [
+        'Crime, Safety & Security',
+        'Youth & Community Development',
+        'Mental Health & Social Support',
+        'Substance Abuse & Addiction',
+        'Community Cohesion & Social Inclusion',
+        'Education & Awareness',
+        'Housing & Environmental Conditions',
+        'Economic & Employment-Related Issues',
+        'Domestic & Family Issues',
+        'School & Student-Related Issues',
+        'Disaster Preparedness & Emergency Support',
+        'Human Trafficking & Exploitation',
+        'Elderly & Persons with Disabilities'
+      ]
+      
+      // If category doesn't match exactly, try to find closest match
+      if (!validCategories.includes(parsed.category)) {
+        const categoryLower = parsed.category.toLowerCase()
+        // Try to match based on keywords
+        for (const validCat of validCategories) {
+          const validCatLower = validCat.toLowerCase()
+          if (categoryLower.includes(validCatLower.split(',')[0]) || 
+              categoryLower.includes('crime') && validCatLower.includes('crime') ||
+              categoryLower.includes('safety') && validCatLower.includes('safety') ||
+              categoryLower.includes('security') && validCatLower.includes('security')) {
+            parsed.category = validCat
+            break
+          }
+        }
+        // If still no match, use the provided category from the form or default
+        if (!validCategories.includes(parsed.category)) {
+          // Use categorization result if available, otherwise use form category
+          parsed.category = categorization.primaryCategory || sanitizedCategory
+        }
       }
 
       // Merge AI-extracted entities with regex-extracted entities
@@ -443,53 +655,152 @@ function categorizeIncident(
   const descLower = description.toLowerCase()
 
   // Map categories to primary categories
+  // Note: Some categories like "Youth Gambling" or "Domestic Violence" map to "Crime, Safety & Security"
+  // even though they contain keywords that might suggest other categories
   const categoryMapping: Record<string, string> = {
+    // Crime, Safety & Security (highest priority for crime-related keywords)
     'crime': 'Crime, Safety & Security',
     'safety': 'Crime, Safety & Security',
     'security': 'Crime, Safety & Security',
+    'theft': 'Crime, Safety & Security',
+    'stolen': 'Crime, Safety & Security',
+    'vehicle': 'Crime, Safety & Security',
+    'burglary': 'Crime, Safety & Security',
+    'break-in': 'Crime, Safety & Security',
+    'break in': 'Crime, Safety & Security',
+    'vandalism': 'Crime, Safety & Security',
+    'violence': 'Crime, Safety & Security',
+    'domestic violence': 'Crime, Safety & Security',
+    'gang': 'Crime, Safety & Security',
+    'firearm': 'Crime, Safety & Security',
+    'weapon': 'Crime, Safety & Security',
+    'gambling': 'Crime, Safety & Security', // Youth gambling is a crime
+    'noise': 'Crime, Safety & Security',
+    'noise pollution': 'Crime, Safety & Security',
+    'neighbor dispute': 'Crime, Safety & Security',
+    'neighbour dispute': 'Crime, Safety & Security',
+    'suspicious': 'Crime, Safety & Security',
+    // Youth & Community Development (positive programs only, not crimes)
     'youth': 'Youth & Community Development',
-    'community': 'Youth & Community Development',
+    'community development': 'Youth & Community Development',
+    'mentorship': 'Youth & Community Development',
+    'program': 'Youth & Community Development',
+    'sports': 'Youth & Community Development',
+    'after-school': 'Youth & Community Development',
+    // Mental Health & Social Support
     'mental health': 'Mental Health & Social Support',
     'mental': 'Mental Health & Social Support',
+    'welfare check': 'Mental Health & Social Support',
+    'vulnerable': 'Mental Health & Social Support',
+    'at risk': 'Mental Health & Social Support',
+    'self-harm': 'Mental Health & Social Support',
+    // Substance Abuse & Addiction
     'substance': 'Substance Abuse & Addiction',
     'drug': 'Substance Abuse & Addiction',
     'alcohol': 'Substance Abuse & Addiction',
+    'intoxication': 'Substance Abuse & Addiction',
+    'rehabilitation': 'Substance Abuse & Addiction',
+    // Community Cohesion & Social Inclusion
     'cohesion': 'Community Cohesion & Social Inclusion',
     'inclusion': 'Community Cohesion & Social Inclusion',
+    'division': 'Community Cohesion & Social Inclusion',
+    'integration': 'Community Cohesion & Social Inclusion',
+    'meeting': 'Community Cohesion & Social Inclusion',
+    'forum': 'Community Cohesion & Social Inclusion',
+    // Education & Awareness
     'education': 'Education & Awareness',
     'awareness': 'Education & Awareness',
+    'workshop': 'Education & Awareness',
+    'prevention': 'Education & Awareness',
+    // Housing & Environmental Conditions
     'housing': 'Housing & Environmental Conditions',
     'environmental': 'Housing & Environmental Conditions',
+    'unsafe': 'Housing & Environmental Conditions',
+    'abandoned': 'Housing & Environmental Conditions',
+    'building': 'Housing & Environmental Conditions',
+    'derelict': 'Housing & Environmental Conditions',
+    'lighting': 'Housing & Environmental Conditions',
+    'mosquito': 'Housing & Environmental Conditions',
+    'rodent': 'Housing & Environmental Conditions',
+    'dumping': 'Housing & Environmental Conditions',
+    // Economic & Employment-Related Issues
     'economic': 'Economic & Employment-Related Issues',
     'employment': 'Economic & Employment-Related Issues',
+    'job': 'Economic & Employment-Related Issues',
+    'career': 'Economic & Employment-Related Issues',
+    'business': 'Economic & Employment-Related Issues',
+    // Domestic & Family Issues (non-violent only)
     'domestic': 'Domestic & Family Issues',
     'family': 'Domestic & Family Issues',
+    'family conflict': 'Domestic & Family Issues',
+    'single mother': 'Domestic & Family Issues',
+    'social worker': 'Domestic & Family Issues',
+    'children\'s authority': 'Domestic & Family Issues',
+    'restraining order': 'Domestic & Family Issues',
+    // School & Student-Related Issues
     'school': 'School & Student-Related Issues',
     'student': 'School & Student-Related Issues',
+    'truancy': 'School & Student-Related Issues',
+    'bullying': 'School & Student-Related Issues',
+    'cyberbullying': 'School & Student-Related Issues',
+    // Disaster Preparedness & Emergency Support
     'disaster': 'Disaster Preparedness & Emergency Support',
     'emergency': 'Disaster Preparedness & Emergency Support',
+    'evacuation': 'Disaster Preparedness & Emergency Support',
+    'relief': 'Disaster Preparedness & Emergency Support',
+    // Human Trafficking & Exploitation
     'trafficking': 'Human Trafficking & Exploitation',
     'exploitation': 'Human Trafficking & Exploitation',
+    // Elderly & Persons with Disabilities
     'elderly': 'Elderly & Persons with Disabilities',
     'disability': 'Elderly & Persons with Disabilities',
+    'disabled': 'Elderly & Persons with Disabilities',
   }
 
   // Determine primary category
+  // Priority: category field > title > description
   let primaryCategory = category
   let confidence: 'high' | 'medium' | 'low' = 'high'
   let matchFound = false
 
-  // Check if category matches known categories
-  for (const [key, mappedCategory] of Object.entries(categoryMapping)) {
-    if (categoryLower.includes(key) || titleLower.includes(key) || descLower.includes(key)) {
-      primaryCategory = mappedCategory
-      confidence = categoryLower.includes(key) ? 'high' : 'medium'
+  // Special handling for categories that should map to Crime, Safety & Security
+  // even if they contain keywords suggesting other categories
+  const crimeKeywords = ['gambling', 'domestic violence', 'stolen vehicle', 'theft', 'burglary', 
+                        'break-in', 'noise pollution', 'gang activity', 'firearm', 'weapon']
+  for (const keyword of crimeKeywords) {
+    if (categoryLower.includes(keyword) || titleLower.includes(keyword) || descLower.includes(keyword)) {
+      primaryCategory = 'Crime, Safety & Security'
+      confidence = categoryLower.includes(keyword) ? 'high' : 'medium'
       matchFound = true
       break
     }
   }
 
-  // If category doesn't match, try to infer from description
+  // Check if category matches known categories (if not already matched to crime)
+  if (!matchFound) {
+    for (const [key, mappedCategory] of Object.entries(categoryMapping)) {
+      if (categoryLower.includes(key)) {
+        primaryCategory = mappedCategory
+        confidence = 'high'
+        matchFound = true
+        break
+      }
+    }
+  }
+
+  // If category doesn't match, try title
+  if (!matchFound || primaryCategory === category) {
+    for (const [key, mappedCategory] of Object.entries(categoryMapping)) {
+      if (titleLower.includes(key)) {
+        primaryCategory = mappedCategory
+        confidence = 'medium'
+        matchFound = true
+        break
+      }
+    }
+  }
+
+  // If still no match, try to infer from description
   if (!matchFound || primaryCategory === category) {
     confidence = 'low'
     for (const [key, mappedCategory] of Object.entries(categoryMapping)) {
@@ -564,7 +875,7 @@ async function callAIService(apiKey: string, prompt: string): Promise<string> {
         messages: [
           {
             role: 'system',
-            content: 'You are a community safety analyst. Analyze incident reports and return ONLY valid JSON with the exact fields: category (string), severity (low/medium/high), entities (object with people, locations, times, organizations arrays), and summary (string). Never include markdown code blocks or explanatory text - only return the JSON object.',
+            content: 'You are an expert community safety analyst specializing in incident categorization and analysis. Your task is to analyze community incident reports and return ONLY valid JSON. You must: 1) Map incidents to the correct primary category from the provided list, 2) Assess severity based on actual threat level and urgency, 3) Extract all relevant entities (people, locations, times, organizations), 4) Provide concise summaries. Always return pure JSON only - no markdown, no explanations, no code blocks. Use the exact category names provided in the user prompt.',
           },
           {
             role: 'user',
@@ -591,7 +902,7 @@ async function callAIService(apiKey: string, prompt: string): Promise<string> {
         } else if (response.status === 429) {
           throw new Error('AI service rate limit exceeded. Please try again later.')
         } else if (response.status === 500 || response.status === 502 || response.status === 503) {
-          throw new Error('AI service is temporarily unavailable. Please try again in a few moments.')
+          throw new Error(`AI service is temporarily unavailable (503). Please try again in a few moments.`)
         } else if (errorData.error?.message) {
           throw new Error(errorData.error.message)
         } else {

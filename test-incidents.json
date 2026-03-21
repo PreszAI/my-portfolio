@@ -1,0 +1,152 @@
+{
+  "testCases": [
+    {
+      "name": "Noise Complaint - Loud Music",
+      "title": "Crime, Safety & Security",
+      "description": "Loud music playing from apartment 3B on Nelson Street since 11 PM last night. The bass is shaking my walls and I can't sleep. Multiple neighbors have complained but the music continues. This happens every weekend.",
+      "category": "Noise Pollution",
+      "location": "Nelson Street",
+      "priority": "low",
+      "incidentDate": "2024-01-15",
+      "incidentTime": "23:00",
+      "expectedCategory": "Crime, Safety & Security",
+      "expectedSeverity": "low"
+    },
+    {
+      "name": "Theft Report - Bicycle Stolen",
+      "title": "Crime, Safety & Security",
+      "description": "My bicycle was stolen from outside the community center on Beetham Phase 2 yesterday afternoon around 2:30 PM. It's a red mountain bike with a black basket. I saw a suspicious person in a hoodie near the bike rack before it went missing. Officer Martinez took my statement.",
+      "category": "Theft",
+      "location": "Beetham Phase 2",
+      "priority": "medium",
+      "incidentDate": "2024-01-14",
+      "incidentTime": "14:30",
+      "expectedCategory": "Crime, Safety & Security",
+      "expectedSeverity": "medium"
+    },
+    {
+      "name": "Suspicious Behavior - Drug Activity",
+      "title": "Crime, Safety & Security",
+      "description": "Suspicious activity observed near the abandoned building on St. John Street. Multiple individuals entering and leaving at odd hours, strong smell of marijuana. Witnessed what appeared to be a drug transaction around 8 PM last night. Concerned for neighborhood safety, especially with children playing nearby.",
+      "category": "Drug Misuse (Marijuana, Cocaine, Pills etc..)",
+      "location": "St. John Street",
+      "priority": "high",
+      "incidentDate": "2024-01-13",
+      "incidentTime": "20:00",
+      "expectedCategory": "Substance Abuse & Addiction",
+      "expectedSeverity": "high"
+    },
+    {
+      "name": "Vandalism - Graffiti",
+      "title": "Crime, Safety & Security",
+      "description": "Graffiti spray-painted on the community center walls on Picton Housing. Obscene language and gang symbols visible. This happened sometime between Friday night and Saturday morning. The building was clean on Friday evening when I passed by around 6 PM.",
+      "category": "Vandalism",
+      "location": "Picton Housing",
+      "priority": "medium",
+      "incidentDate": "2024-01-12",
+      "incidentTime": "",
+      "expectedCategory": "Crime, Safety & Security",
+      "expectedSeverity": "medium"
+    },
+    {
+      "name": "Domestic Dispute - Neighbor Conflict",
+      "title": "Crime, Safety & Security",
+      "description": "Loud argument between neighbors in apartment 5A and 5B on Block 22. Shouting and banging sounds heard around 9 PM. Sounds like furniture being thrown. Concerned about potential violence. This is the third incident this month.",
+      "category": "Neighbour Disputes",
+      "location": "Block 22",
+      "priority": "high",
+      "incidentDate": "2024-01-11",
+      "incidentTime": "21:00",
+      "expectedCategory": "Crime, Safety & Security",
+      "expectedSeverity": "high"
+    },
+    {
+      "name": "Youth Program Request",
+      "title": "Youth & Community Development",
+      "description": "Parents requesting after-school programs for children in the Beetham Phase 3 area. Many kids are unsupervised after school and getting into trouble. Need mentorship programs and sports activities to keep them engaged. Community meeting scheduled for next week.",
+      "category": "Program for Youth",
+      "location": "Beetham Phase 3",
+      "priority": "medium",
+      "incidentDate": "2024-01-10",
+      "incidentTime": "",
+      "expectedCategory": "Youth & Community Development",
+      "expectedSeverity": "medium"
+    },
+    {
+      "name": "Mental Health Concern",
+      "title": "Mental Health & Social Support",
+      "description": "Elderly resident Mrs. Johnson living alone on Chocolate Alley hasn't been seen in 3 days. Mail is piling up and her lights haven't been on. Neighbors are worried. She's usually very active and friendly. Last seen on Monday morning getting groceries.",
+      "category": "Welfare checks for vulnerable households",
+      "location": "Chocolate Alley",
+      "priority": "high",
+      "incidentDate": "2024-01-09",
+      "incidentTime": "",
+      "expectedCategory": "Mental Health & Social Support",
+      "expectedSeverity": "high"
+    },
+    {
+      "name": "Environmental Health - Rodent Infestation",
+      "title": "Housing & Environmental Conditions",
+      "description": "Severe rodent infestation in the apartment building on Duncan Street. Rats seen in hallways and garbage areas. Health hazard for residents, especially children. Multiple complaints filed but no action taken. Dumpsters are overflowing and attracting pests.",
+      "category": "Environmental health concerns (Mosquitoes, Rodents, Dumping)",
+      "location": "Duncan Street",
+      "priority": "high",
+      "incidentDate": "2024-01-08",
+      "incidentTime": "",
+      "expectedCategory": "Housing & Environmental Conditions",
+      "expectedSeverity": "high"
+    },
+    {
+      "name": "School Bullying Incident",
+      "title": "School & Student-Related Issues",
+      "description": "Student Marcus reported being bullied by older students at the school on St. Paul Street. Physical intimidation and name-calling happening during lunch breaks. Marcus is afraid to go to school. Parents contacted the principal but situation continues.",
+      "category": "Bullying",
+      "location": "St. Paul Street",
+      "priority": "high",
+      "incidentDate": "2024-01-07",
+      "incidentTime": "",
+      "expectedCategory": "School & Student-Related Issues",
+      "expectedSeverity": "high"
+    },
+    {
+      "name": "Family Conflict - Single Mother Support",
+      "title": "Domestic & Family Issues",
+      "description": "Single mother with three children struggling in apartment on Mango Rose. Utilities cut off, children not attending school regularly. Neighbors report hearing children crying frequently. Family needs social services support and food assistance.",
+      "category": "Support for single mothers or at-risk households",
+      "location": "Mango Rose",
+      "priority": "high",
+      "incidentDate": "2024-01-06",
+      "incidentTime": "",
+      "expectedCategory": "Domestic & Family Issues",
+      "expectedSeverity": "high"
+    },
+    {
+      "name": "Street Lighting Issue",
+      "title": "Housing & Environmental Conditions",
+      "description": "Street lights not working on Pump Trace for the past two weeks. Area is completely dark at night, making it unsafe for residents walking home. Multiple requests to T&TEC but no response. Increased risk of crime in the area.",
+      "category": "Nonfunctional Street Lighting",
+      "location": "Pump Trace",
+      "priority": "medium",
+      "incidentDate": "2024-01-05",
+      "incidentTime": "",
+      "expectedCategory": "Housing & Environmental Conditions",
+      "expectedSeverity": "medium"
+    },
+    {
+      "name": "Public Intoxication",
+      "title": "Substance Abuse & Addiction",
+      "description": "Intoxicated person causing disturbance on Rock City. Shouting and stumbling in the street, approaching residents aggressively. Police called but person left before officers arrived. This is a recurring issue in the area.",
+      "category": "Public intoxication and safety",
+      "location": "Rock City",
+      "priority": "medium",
+      "incidentDate": "2024-01-04",
+      "incidentTime": "19:30",
+      "expectedCategory": "Substance Abuse & Addiction",
+      "expectedSeverity": "medium"
+    }
+  ],
+  "instructions": "Use these test cases to verify AI categorization accuracy. Each case includes expected category and severity for validation."
+}
+
+
+

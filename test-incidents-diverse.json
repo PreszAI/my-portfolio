@@ -1,0 +1,127 @@
+{
+  "testIncidents": [
+    {
+      "id": "test-1",
+      "title": "Crime, Safety & Security",
+      "description": "I noticed a group of teenagers, approximately 15-17 years old, gathered behind the community center on Nelson Street around 8 PM last night. They were playing cards and exchanging money. One of them, Marcus Johnson, was collecting bets and keeping a ledger. This has been happening every Friday night for the past month. The noise from their arguments and celebrations is disturbing nearby residents, and I'm concerned about the youth gambling activity.",
+      "category": "Youth Gambling",
+      "location": "Nelson Street",
+      "priority": "medium",
+      "incidentDate": "2024-01-15",
+      "incidentTime": "20:00",
+      "expectedCategory": "Crime, Safety & Security",
+      "expectedSeverity": "medium"
+    },
+    {
+      "id": "test-2",
+      "title": "Crime, Safety & Security",
+      "description": "My red Toyota Corolla, license plate PCD 1234, was stolen from in front of my house on Beetham Phase 2 between 2 AM and 6 AM this morning. I parked it there at 11 PM last night and discovered it missing when I went to leave for work. The car has a distinctive dent on the right rear fender. I've already reported this to the police, but wanted to inform the community watch as well. Officer Smith from the local station took my statement.",
+      "category": "Stolen Vehicle",
+      "location": "Beetham Phase 2",
+      "priority": "high",
+      "incidentDate": "2024-01-16",
+      "incidentTime": "02:00",
+      "expectedCategory": "Crime, Safety & Security",
+      "expectedSeverity": "high"
+    },
+    {
+      "id": "test-3",
+      "title": "Crime, Safety & Security",
+      "description": "The neighbors at 45 Duncan Street have been playing extremely loud music every night from 10 PM until 3 AM for the past week. The bass is so strong it's shaking my walls and I can't sleep. I've tried talking to them twice, but they just turn it up louder. Last night, several other neighbors came out to complain as well. This is affecting the entire block, especially the elderly residents and families with young children.",
+      "category": "Noise Pollution",
+      "location": "Duncan Street",
+      "priority": "medium",
+      "incidentDate": "2024-01-14",
+      "incidentTime": "22:00",
+      "expectedCategory": "Crime, Safety & Security",
+      "expectedSeverity": "low"
+    },
+    {
+      "id": "test-4",
+      "title": "Crime, Safety & Security",
+      "description": "Someone broke into my apartment on Picton Housing yesterday afternoon around 2:30 PM while I was at work. They forced open the back window and stole my laptop, jewelry worth approximately $2,000, and $500 in cash. The apartment was ransacked - drawers were opened and items were scattered everywhere. My neighbor, Mrs. Williams, saw two young men in hoodies leaving the area around that time but couldn't identify them. I've filed a police report with Constable Brown.",
+      "category": "Theft",
+      "location": "Picton Housing",
+      "priority": "high",
+      "incidentDate": "2024-01-15",
+      "incidentTime": "14:30",
+      "expectedCategory": "Crime, Safety & Security",
+      "expectedSeverity": "high"
+    },
+    {
+      "id": "test-5",
+      "title": "Crime, Safety & Security",
+      "description": "There's been suspicious activity at the abandoned building on the corner of St. John Street and Harpe Place. For the past three days, I've noticed different vehicles parking there late at night, people going in and out with bags, and what appears to be lookouts posted outside. The building has been boarded up for years, but someone has removed the boards. This could be drug activity or illegal gambling. I'm concerned for the safety of children who play nearby.",
+      "category": "Gang Activity",
+      "location": "St. John Street",
+      "priority": "high",
+      "incidentDate": "2024-01-13",
+      "incidentTime": "23:00",
+      "expectedCategory": "Crime, Safety & Security",
+      "expectedSeverity": "high"
+    },
+    {
+      "id": "test-6",
+      "title": "Substance Abuse & Addiction",
+      "description": "A group of individuals has been gathering in the park near Chocolate Alley every evening around 6 PM. They appear to be using drugs - I've seen them passing around what looks like marijuana, and there are empty alcohol bottles left behind. The area smells strongly of smoke. Yesterday, one person appeared to be unconscious on a bench and others were trying to wake them. This is a public space where families and children often visit, and I'm worried about safety and exposure to illegal substances.",
+      "category": "Drug Misuse (Marijuana, Cocaine, Pills etc..)",
+      "location": "Chocolate Alley",
+      "priority": "high",
+      "incidentDate": "2024-01-14",
+      "incidentTime": "18:00",
+      "expectedCategory": "Substance Abuse & Addiction",
+      "expectedSeverity": "high"
+    },
+    {
+      "id": "test-7",
+      "title": "Domestic & Family Issues",
+      "description": "I'm reporting ongoing domestic violence at 23 Springside. I can hear loud arguments, screaming, and sounds of physical altercations almost every night. Last night around 9 PM, I heard a woman crying and what sounded like furniture being thrown. I'm very concerned for her safety and the safety of any children in the home. The woman, who I believe is named Sarah, has appeared with bruises before. I've tried to check on her, but the man who lives there is very aggressive and told me to mind my own business.",
+      "category": "Domestic Violence",
+      "location": "Springside",
+      "priority": "high",
+      "incidentDate": "2024-01-15",
+      "incidentTime": "21:00",
+      "expectedCategory": "Crime, Safety & Security",
+      "expectedSeverity": "high"
+    },
+    {
+      "id": "test-8",
+      "title": "School & Student-Related Issues",
+      "description": "My 14-year-old daughter, Emily, has been a victim of cyberbullying for the past two weeks. Several students from her school have been sending threatening messages through social media, spreading false rumors about her, and creating fake accounts to harass her. The messages include threats of physical harm and have caused her significant emotional distress. She's afraid to go to school and her grades have dropped. The school administration has been notified but hasn't taken action yet.",
+      "category": "Cyberbullying",
+      "location": "St. Joseph Plannings",
+      "priority": "high",
+      "incidentDate": "2024-01-10",
+      "incidentTime": "",
+      "expectedCategory": "School & Student-Related Issues",
+      "expectedSeverity": "high"
+    },
+    {
+      "id": "test-9",
+      "title": "Housing & Environmental Conditions",
+      "description": "The building at 78 Mango Alley has been abandoned for over a year and is becoming a serious safety hazard. The roof is partially collapsed, windows are broken, and the structure appears unstable. Last week, a section of the outer wall crumbled onto the sidewalk. There's also evidence of squatters - I've seen people entering and leaving, and there are fires being lit inside at night which is a fire risk. The building is adjacent to occupied homes and poses a danger to residents, especially children who play nearby.",
+      "category": "Unsafe or abandoned buildings",
+      "location": "Mango Alley",
+      "priority": "high",
+      "incidentDate": "2024-01-12",
+      "incidentTime": "",
+      "expectedCategory": "Housing & Environmental Conditions",
+      "expectedSeverity": "high"
+    },
+    {
+      "id": "test-10",
+      "title": "Mental Health & Social Support",
+      "description": "I'm concerned about my elderly neighbor, Mr. James Thompson, who lives alone at 12 Pashley Street. I haven't seen him in three days, which is unusual as he normally sits on his porch every morning. His mail is piling up, and I can hear his phone ringing inside with no answer. He's 78 years old and has mentioned having health problems before. I'm worried he may have fallen or become ill with no one to help. I've knocked on his door multiple times but there's no response. This requires immediate attention.",
+      "category": "Welfare checks for vulnerable households",
+      "location": "Pashley Street",
+      "priority": "high",
+      "incidentDate": "2024-01-16",
+      "incidentTime": "10:00",
+      "expectedCategory": "Mental Health & Social Support",
+      "expectedSeverity": "high"
+    }
+  ]
+}
+
+
+

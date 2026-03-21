@@ -19,6 +19,7 @@ type AnalysisData = {
   riskLevel?: 'low' | 'medium' | 'high'
   urgency?: 'low' | 'medium' | 'high'
   tags?: string[]
+  note?: string
 }
 
 type IncidentAnalysisProps = {
@@ -163,6 +164,13 @@ export default function IncidentAnalysis({ analysis, isLoading }: IncidentAnalys
         </div>
         <p className="text-sm leading-relaxed text-foreground/80">{analysis.summary}</p>
       </div>
+
+      {/* Note (for fallback analysis) - subtle at bottom */}
+      {analysis.note && (
+        <div className="mt-4 border-t border-border/40 pt-3 dark:border-white/10">
+          <p className="text-xs text-muted italic">{analysis.note}</p>
+        </div>
+      )}
 
       {/* Extracted Entities */}
       {hasEntities && (
