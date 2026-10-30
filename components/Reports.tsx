@@ -17,6 +17,7 @@ export type Report = {
   reporterPhone?: string
   reporterEmail?: string
   reportScope?: 'community' | 'school'
+  schoolName?: string
   incidentDate?: string
   incidentTime?: string
   attachments?: {
@@ -38,6 +39,7 @@ type ReportFormState = {
   reporterPhone: string
   reporterEmail: string
   reportScope: 'community' | 'school'
+  schoolName: string
   incidentDate: string
   incidentTime: string
   manualCategory: string
@@ -59,7 +61,7 @@ const titles = [
   'Disaster Preparedness & Emergency Support',
   'Human Trafficking & Exploitation',
   'Elderly & Persons with Disabilities',
-]
+].sort((a, b) => a.localeCompare(b))
 
 // Mapping of titles to their available categories
 const titleCategories: Record<string, string[]> = {
@@ -229,6 +231,47 @@ const locations = [
   'Village Council',
 ]
 
+const schools = [
+  'Russell Latapy Secondary School',
+  'Morvant Laventille Secondary School',
+  'Malick Secondary School',
+  'Hockett Baptiste Primary School',
+  "St. Barb's Government Primary School",
+  'Morvant New Government Primary School',
+  "Eastern Boys' Government Primary School",
+  "Eastern Girls' Government Primary School",
+  'South POS Preschool',
+  "Laventille Boys' Government Primary School",
+  "Laventille Girls' Government Primary School",
+  'Piccadilly Government Primary School',
+  'Our Lady of Laventille R.C. Primary School',
+  'Rosehill R.C. Primary School',
+  "St. Hilda's Government Primary School",
+  "Belmont Boys' R.C. Primary School",
+  "St. Phillip's Government Primary School",
+  "Bethlehem Girls' R.C. Primary School",
+  "Bethlehem Boys' R.C. Primary School",
+  "Credo Girls' Home",
+  'Servol Special School (Calvary Hill)',
+  'Escallier St. Jerome Anglican Primary School',
+  'Gloster Lodge Primary School',
+  'Success Laventille Secondary School',
+  'South East POS Secondary School',
+  'Laventille Technical Institute',
+  'Servol Beetham Life Centre',
+  'Servol Laventille Junior Life Centre',
+  'Servol Each One Teach One Special School',
+  'Servol All in One Child Development Centre',
+  'Servol Kiddy Care ECCE (Sea Lots)',
+  'Beetham Gardens EXCEL Government Primary School',
+  'Success R.C. Primary School',
+  "Rosary Boys' R.C. Primary School",
+  "St. Rose's Girls' R.C. Primary School",
+  "Nelson Street Boys' R.C. Primary School",
+  "Nelson Street Girls' R.C. Primary School",
+  "CREDO Boys' Home",
+].sort((a, b) => a.localeCompare(b))
+
 const initialFormState: ReportFormState = {
   title: '',
   description: '',
@@ -239,6 +282,7 @@ const initialFormState: ReportFormState = {
   reporterPhone: '',
   reporterEmail: '',
   reportScope: 'community',
+  schoolName: '',
   incidentDate: '',
   incidentTime: '',
   manualCategory: '',
@@ -306,6 +350,7 @@ export default function Reports() {
                   reporterPhone: r.reporterPhone,
                   reporterEmail: r.reporterEmail,
                   reportScope: r.reportScope === 'school' ? 'school' : 'community',
+                  schoolName: r.schoolName,
                   incidentDate: r.incidentDate,
                   incidentTime: r.incidentTime,
                   attachments: Array.isArray(r.attachments) ? r.attachments : undefined,
@@ -368,6 +413,7 @@ export default function Reports() {
                     reporterPhone: r.reporterPhone,
                     reporterEmail: r.reporterEmail,
                     reportScope: r.reportScope === 'school' ? 'school' : 'community',
+                    schoolName: r.schoolName,
                     incidentDate: r.incidentDate,
                     incidentTime: r.incidentTime,
                     attachments: Array.isArray(r.attachments) ? r.attachments : undefined,
@@ -461,6 +507,10 @@ export default function Reports() {
       newErrors.manualCategory = 'Category must be at least 2 characters.'
     }
 
+    if (values.reportScope === 'school' && !values.schoolName.trim()) {
+      newErrors.schoolName = 'Please select a school.'
+    }
+
     if (!values.incidentDate.trim()) {
       newErrors.incidentDate = 'Please select a date.'
     }
@@ -518,6 +568,7 @@ export default function Reports() {
       reporterPhone: form.reporterPhone.trim() || undefined,
       reporterEmail: form.reporterEmail.trim() || undefined,
       reportScope: form.reportScope,
+      schoolName: form.reportScope === 'school' ? form.schoolName.trim() || undefined : undefined,
       incidentDate: form.incidentDate.trim() || undefined,
       incidentTime: form.incidentTime.trim() || undefined,
       attachments,
@@ -804,6 +855,7 @@ export default function Reports() {
               reporterPhone: r.reporterPhone,
               reporterEmail: r.reporterEmail,
               reportScope: r.reportScope === 'school' ? 'school' : 'community',
+              schoolName: r.schoolName,
               incidentDate: r.incidentDate,
               incidentTime: r.incidentTime,
               attachments: Array.isArray(r.attachments) ? r.attachments : undefined,
@@ -882,7 +934,9 @@ export default function Reports() {
                         setForm((prev) => ({
                           ...prev,
                           reportScope: scope,
+                          schoolName: scope === 'school' ? prev.schoolName : '',
                         }))
+                        setErrors((prev) => ({ ...prev, schoolName: undefined }))
                         setStatus((prev) => (prev === 'success' ? 'idle' : prev))
                       }}
                       className={`rounded-lg px-3 py-2 text-sm font-semibold capitalize transition ${
@@ -897,6 +951,32 @@ export default function Reports() {
                 })}
               </div>
               <form onSubmit={handleSubmit} className="space-y-4" noValidate>
+                {form.reportScope === 'school' && (
+                  <div>
+                    <label htmlFor="schoolName" className="mb-1 block text-sm font-medium text-foreground">
+                      School *
+                    </label>
+                    <select
+                      id="schoolName"
+                      name="schoolName"
+                      value={form.schoolName}
+                      onChange={handleChange('schoolName')}
+                      aria-invalid={Boolean(errors.schoolName)}
+                      required
+                      className={`w-full rounded-lg border bg-surface/80 px-3 py-2 text-sm text-foreground focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/40 dark:bg-surface/30 ${
+                        errors.schoolName ? 'border-red-400/60 focus:ring-red-400/30' : 'border-border/60 dark:border-white/10'
+                      }`}
+                    >
+                      <option value="">Select school</option>
+                      {schools.map((school) => (
+                        <option key={school} value={school}>
+                          {school}
+                        </option>
+                      ))}
+                    </select>
+                    {errors.schoolName && <p className="mt-1 text-xs text-red-300">{errors.schoolName}</p>}
+                  </div>
+                )}
                 <div>
                   <label htmlFor="title" className="mb-1 block text-sm font-medium text-foreground">
                     Title *
@@ -1186,6 +1266,7 @@ export default function Reports() {
                               reporterPhone: report.reporterPhone || null,
                               reporterEmail: report.reporterEmail || null,
                               reportScope: report.reportScope || 'community',
+                              schoolName: report.schoolName || null,
                               incidentDate: report.incidentDate || null,
                               incidentTime: report.incidentTime || null,
                               attachments: report.attachments
