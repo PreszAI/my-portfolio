@@ -14,7 +14,9 @@ export type Report = {
   createdAt: Date
   location?: string
   reporterName?: string
+  reporterPhone?: string
   reporterEmail?: string
+  reportScope?: 'community' | 'school'
   incidentDate?: string
   incidentTime?: string
   attachments?: {
@@ -33,7 +35,9 @@ type ReportFormState = {
   priority: 'low' | 'medium' | 'high'
   location: string
   reporterName: string
+  reporterPhone: string
   reporterEmail: string
+  reportScope: 'community' | 'school'
   incidentDate: string
   incidentTime: string
   manualCategory: string
@@ -232,7 +236,9 @@ const initialFormState: ReportFormState = {
   priority: 'medium',
   location: '',
   reporterName: '',
+  reporterPhone: '',
   reporterEmail: '',
+  reportScope: 'community',
   incidentDate: '',
   incidentTime: '',
   manualCategory: '',
@@ -297,7 +303,9 @@ export default function Reports() {
                   createdAt: r.createdAt ? new Date(r.createdAt) : new Date(),
                   location: r.location,
                   reporterName: r.reporterName,
+                  reporterPhone: r.reporterPhone,
                   reporterEmail: r.reporterEmail,
+                  reportScope: r.reportScope === 'school' ? 'school' : 'community',
                   incidentDate: r.incidentDate,
                   incidentTime: r.incidentTime,
                   attachments: Array.isArray(r.attachments) ? r.attachments : undefined,
@@ -357,7 +365,9 @@ export default function Reports() {
                     createdAt: r.createdAt ? new Date(r.createdAt) : new Date(),
                     location: r.location,
                     reporterName: r.reporterName,
+                    reporterPhone: r.reporterPhone,
                     reporterEmail: r.reporterEmail,
+                    reportScope: r.reportScope === 'school' ? 'school' : 'community',
                     incidentDate: r.incidentDate,
                     incidentTime: r.incidentTime,
                     attachments: Array.isArray(r.attachments) ? r.attachments : undefined,
@@ -455,6 +465,10 @@ export default function Reports() {
       newErrors.incidentDate = 'Please select a date.'
     }
 
+    if (values.reporterPhone && values.reporterPhone.replace(/\D/g, '').length < 7) {
+      newErrors.reporterPhone = 'Please enter a valid contact number.'
+    }
+
     if (values.reporterEmail && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(values.reporterEmail.trim())) {
       newErrors.reporterEmail = 'Please enter a valid email address.'
     }
@@ -501,7 +515,9 @@ export default function Reports() {
       createdAt: new Date(),
       location: form.location.trim() || undefined,
       reporterName: form.reporterName.trim() || undefined,
+      reporterPhone: form.reporterPhone.trim() || undefined,
       reporterEmail: form.reporterEmail.trim() || undefined,
+      reportScope: form.reportScope,
       incidentDate: form.incidentDate.trim() || undefined,
       incidentTime: form.incidentTime.trim() || undefined,
       attachments,
@@ -785,7 +801,9 @@ export default function Reports() {
               createdAt: r.createdAt ? new Date(r.createdAt) : new Date(),
               location: r.location,
               reporterName: r.reporterName,
+              reporterPhone: r.reporterPhone,
               reporterEmail: r.reporterEmail,
+              reportScope: r.reportScope === 'school' ? 'school' : 'community',
               incidentDate: r.incidentDate,
               incidentTime: r.incidentTime,
               attachments: Array.isArray(r.attachments) ? r.attachments : undefined,
@@ -835,7 +853,7 @@ export default function Reports() {
         <Reveal>
           <div className="flex flex-col gap-4 md:flex-row md:items-end md:justify-between">
             <div>
-              <h2 className="heading text-foreground">Community Incident Reports</h2>
+              <h2 className="heading text-foreground">Community and School Incident Report</h2>
               <p className="subheading mt-2">
                 Submit and track community issues. AI analysis coming soon.
               </p>
@@ -851,6 +869,33 @@ export default function Reports() {
           <Reveal delayMs={80} className="lg:col-span-1">
             <div className="rounded-2xl border border-border/60 bg-surface/70 p-6 backdrop-blur dark:border-white/10 dark:bg-surface/40">
               <h3 className="mb-4 text-lg font-semibold text-foreground">Submit Report</h3>
+              <div className="mb-4 grid grid-cols-2 gap-2 rounded-xl border border-border/60 bg-surface/50 p-1 dark:border-white/10 dark:bg-surface/20" role="tablist" aria-label="Report type">
+                {(['community', 'school'] as const).map((scope) => {
+                  const active = form.reportScope === scope
+                  return (
+                    <button
+                      key={scope}
+                      type="button"
+                      role="tab"
+                      aria-selected={active}
+                      onClick={() => {
+                        setForm((prev) => ({
+                          ...prev,
+                          reportScope: scope,
+                        }))
+                        setStatus((prev) => (prev === 'success' ? 'idle' : prev))
+                      }}
+                      className={`rounded-lg px-3 py-2 text-sm font-semibold capitalize transition ${
+                        active
+                          ? 'bg-primary text-white shadow-glow'
+                          : 'text-muted hover:bg-surface-alt/70 hover:text-foreground'
+                      }`}
+                    >
+                      {scope}
+                    </button>
+                  )
+                })}
+              </div>
               <form onSubmit={handleSubmit} className="space-y-4" noValidate>
                 <div>
                   <label htmlFor="title" className="mb-1 block text-sm font-medium text-foreground">
@@ -1048,7 +1093,7 @@ export default function Reports() {
                 <div className="space-y-3 border-t border-border/40 pt-3 dark:border-white/10">
                   <div>
                     <label htmlFor="reporterName" className="mb-1 block text-sm font-medium text-foreground">
-                      Your Name (optional)
+                      Interviewee (optional)
                     </label>
                     <input
                       id="reporterName"
@@ -1056,9 +1101,28 @@ export default function Reports() {
                       type="text"
                       value={form.reporterName}
                       onChange={handleChange('reporterName')}
-                      placeholder="Name"
+                      placeholder="Interviewee name"
                       className="w-full rounded-lg border border-border/60 bg-surface/80 px-3 py-2 text-sm text-foreground placeholder:text-muted focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/40 dark:bg-surface/30 dark:border-white/10"
                     />
+                  </div>
+
+                  <div>
+                    <label htmlFor="reporterPhone" className="mb-1 block text-sm font-medium text-foreground">
+                      Contact Number (optional)
+                    </label>
+                    <input
+                      id="reporterPhone"
+                      name="reporterPhone"
+                      type="tel"
+                      value={form.reporterPhone}
+                      onChange={handleChange('reporterPhone')}
+                      aria-invalid={Boolean(errors.reporterPhone)}
+                      placeholder="868-000-0000"
+                      className={`w-full rounded-lg border bg-surface/80 px-3 py-2 text-sm text-foreground placeholder:text-muted focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/40 dark:bg-surface/30 ${
+                        errors.reporterPhone ? 'border-red-400/60 focus:ring-red-400/30' : 'border-border/60 dark:border-white/10'
+                      }`}
+                    />
+                    {errors.reporterPhone && <p className="mt-1 text-xs text-red-300">{errors.reporterPhone}</p>}
                   </div>
 
                   <div>
@@ -1119,7 +1183,9 @@ export default function Reports() {
                               status: report.status,
                               location: report.location || null,
                               reporterName: report.reporterName || null,
+                              reporterPhone: report.reporterPhone || null,
                               reporterEmail: report.reporterEmail || null,
+                              reportScope: report.reportScope || 'community',
                               incidentDate: report.incidentDate || null,
                               incidentTime: report.incidentTime || null,
                               attachments: report.attachments
